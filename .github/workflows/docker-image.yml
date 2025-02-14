@@ -32,6 +32,6 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/backend:latest
+          target: production
           build-args: |
             NODE_ENV=production
-            build_mode=Release
