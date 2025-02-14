@@ -30,9 +30,6 @@ USER nestjs
 
 COPY --from=build --chown=nestjs:nodejs /app/prisma ./prisma
 
-COPY --chown=nestjs:nodejs migrate-and-start.sh ./
-RUN chmod +x migrate-and-start.sh
-
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
 
 EXPOSE 3000
@@ -50,7 +47,6 @@ USER nestjs
 COPY . .
 
 COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=dependencies /root/.npm /root/.npm
 
 EXPOSE 3000
-CMD ["npm", "run", "start:dev"]
+CMD sh -c "npx prisma migrate deploy && npm run start:prod"
