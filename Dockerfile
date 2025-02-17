@@ -28,8 +28,6 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs --ingroup nodejs
 USER nestjs
 
-RUN npm ci --omit=dev && npm cache clean --force
-
 ENV NODE_ENV production
 
 COPY --from=build --chown=nestjs:nodejs /app/prisma ./prisma
@@ -41,6 +39,8 @@ COPY --from=dependencies --chown=nestjs:nodejs /app/package*.json ./
 
 # Copy build dependencies
 COPY --from=build --chown=nestjs:nodejs /app/node_modules ./node_modules
+
+RUN npm ci --omit=dev && npm cache clean --force
 
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
