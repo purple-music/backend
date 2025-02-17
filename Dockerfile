@@ -33,7 +33,7 @@ COPY --from=build --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
 
 EXPOSE 3000
-CMD ["./migrate-and-start.sh"]
+CMD sh -c "npx prisma migrate deploy && npm run start:prod"
 
 # === DEVELOPMENT ===
 FROM base AS development
@@ -49,4 +49,4 @@ COPY . .
 COPY --from=dependencies /app/node_modules ./node_modules
 
 EXPOSE 3000
-CMD sh -c "npx prisma migrate deploy && npm run start:prod"
+CMD sh -c "npx prisma migrate deploy && npm run start:dev"
