@@ -24,24 +24,34 @@ FROM base AS production
 
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs --ingroup nodejs
 USER nestjs
+
+RUN npm ci --only=production && npm cache clean --force
+
+ENV NODE_ENV production
 
 COPY --from=build --chown=nestjs:nodejs /app/prisma ./prisma
 
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
 
+# Copy package.json and package-lock.json
+COPY --from=dependencies --chown=nestjs:nodejs /app/package*.json ./
+
+# Copy build dependencies
+COPY --from=build --chown=nestjs:nodejs /app/node_modules ./node_modules
+
 EXPOSE 3000
-CMD sh -c "npx prisma migrate deploy && npm run start:prod"
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
 
 # === DEVELOPMENT ===
 FROM base AS development
 
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs --ingroup nodejs
 USER nestjs
 
 COPY . .
@@ -49,4 +59,4 @@ COPY . .
 COPY --from=dependencies /app/node_modules ./node_modules
 
 EXPOSE 3000
-CMD sh -c "npx prisma migrate deploy && npm run start:dev"
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:dev"]
