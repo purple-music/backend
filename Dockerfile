@@ -28,7 +28,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs --ingroup nodejs
 USER nestjs
 
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 ENV NODE_ENV production
 
