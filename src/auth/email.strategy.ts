@@ -18,7 +18,7 @@ export class EmailStrategy extends PassportStrategy(Strategy, 'email') {
   ): Promise<Omit<User, 'password'>> {
     const user = await this.authService.validateUserByEmail(email, password);
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Incorrect email or password');
     }
     return user;
   }

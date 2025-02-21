@@ -1,7 +1,8 @@
-import { Controller, Post, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, UseGuards, Req, Get } from '@nestjs/common';
 import { Request } from 'express';
 import { EmailAuthGuard } from './auth/email-auth.guard';
 import { AuthService } from './auth/auth.service';
+import { JwtAuthGuard } from './auth/jwt-auth-guard';
 
 @Controller()
 export class AppController {
@@ -31,5 +32,11 @@ export class AppController {
         resolve('Logged out successfully');
       });
     });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Req() req: Request) {
+    return req.user;
   }
 }
