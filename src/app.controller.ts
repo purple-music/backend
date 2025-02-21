@@ -1,21 +1,22 @@
-import { Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { EmailAuthGuard } from './auth/email-auth.guard';
+import { AuthService } from './auth/auth.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
+  constructor(private authService: AuthService) {}
 
   @UseGuards(EmailAuthGuard)
   @Post('/auth/login')
   login(@Req() req: Request) {
-    return req.user;
+    if (!req.user || !req.user.email) {
+      return { error: 'Unauthorized' };
+    }
+    return this.authService.login({
+      email: req.user.email,
+      id: req.user.id,
+    });
   }
 
   @UseGuards(EmailAuthGuard)
