@@ -34,7 +34,9 @@
     "passport-vkontakte": "^0.5.0",
     "passport-yandex": "^0.0.5",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "resend": "^4.1.2",
+    "rxjs": "^7.8.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -53,6 +55,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/passport-vkontakte": "^1.3.5",
     "@types/supertest": "^6.0.2",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

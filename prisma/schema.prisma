@@ -80,10 +80,12 @@ model Order {
   bookings Booking[]
 }
 
+// TODO: rename to "EmailVerificationToken"
 model VerificationToken {
   id      String   @id @default(cuid())
   email   String   @unique
   token   String   @unique
+  // TODO: rename to "expiresAt"
   expires DateTime
 }
 
@@ -91,5 +93,6 @@ model PasswordResetToken {
   id      String   @id @default(cuid())
   email   String   @unique
   token   String   @unique
+  // TODO: rename to "expiresAt"
   expires DateTime
 }

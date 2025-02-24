@@ -1,15 +1,23 @@
-import { Controller, Post, UseGuards, Req, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UseGuards,
+  Req,
+  Get,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { Request } from 'express';
-import { EmailAuthGuard } from './auth/email-auth.guard';
-import { AuthService } from './auth/auth.service';
-import { JwtAuthGuard } from './auth/jwt-auth-guard';
+import { AuthService } from './auth.service';
+import { EmailAuthGuard } from './email-auth.guard';
+import { JwtAuthGuard } from './jwt-auth-guard';
 
-@Controller()
-export class AppController {
+@Controller('auth')
+export class AuthController {
   constructor(private authService: AuthService) {}
 
   @UseGuards(EmailAuthGuard)
-  @Post('/auth/login')
+  @Post('login')
   login(@Req() req: Request) {
     if (!req.user || !req.user.email) {
       return { error: 'Unauthorized' };
@@ -21,7 +29,7 @@ export class AppController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('auth/logout')
+  @Post('logout')
   async logout(@Req() req: Request) {
     return new Promise((resolve, reject) => {
       req.logout((err: Error) => {
@@ -38,5 +46,15 @@ export class AppController {
   @Get('profile')
   getProfile(@Req() req: Request) {
     return req.user;
+  }
+
+  @Post('register')
+  async register(@Body() body: { email: string; password: string }) {
+    return this.authService.register(body.email, body.password);
+  }
+
+  @Post('verify')
+  async verify(@Query('token') token: string) {
+    return this.authService.verifyEmailToken(token);
   }
 }
