@@ -1,17 +1,13 @@
-import {
-  Controller,
-  Post,
-  UseGuards,
-  Req,
-  Get,
-  Body,
-  Query,
-} from '@nestjs/common';
+import { Controller, Post, UseGuards, Req, Get, Body } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { EmailAuthGuard } from './email-auth.guard';
 import { JwtAuthGuard } from './jwt-auth-guard';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { VerifyEmailDto } from './dtos/verify.dto';
+import { ErrorResponseDto } from './dtos/error.dto';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -56,6 +52,17 @@ export class AuthController {
   }
 
   @Post('verify')
+  @ApiOperation({ summary: 'Verify email token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification success',
+    type: VerifyEmailDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired token',
+    type: ErrorResponseDto,
+  })
   async verify(@Body() body: { token: string }) {
     return this.authService.verifyEmailToken(body.token);
   }
