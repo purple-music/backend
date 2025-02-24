@@ -9,6 +9,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { TokenService } from './token.service';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from './email.service';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
@@ -28,5 +29,6 @@ import { EmailService } from './email.service';
     JwtStrategy,
   ],
   exports: [AuthService],
+  controllers: [AuthController],
 })
 export class AuthModule {}

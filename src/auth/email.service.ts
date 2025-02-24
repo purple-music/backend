@@ -11,7 +11,7 @@ export class EmailService {
   }
 
   async sendVerificationEmail(email: string, token: string) {
-    const verificationLink = `${emailConstants.host}/auth/verify?token=${token}`;
+    const verificationLink = `${emailConstants.emailVerificationPageUrl}?token=${token}`;
 
     try {
       const result = await this.resend.emails.send({
@@ -31,7 +31,7 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
-    const resetLink = `${emailConstants.host}/auth/reset-password?token=${token}`;
+    const resetLink = `${emailConstants.passwordResetPageUrl}?token=${token}`;
 
     try {
       const result = await this.resend.emails.send({

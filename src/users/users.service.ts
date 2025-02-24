@@ -12,9 +12,9 @@ export class UsersService {
     });
   }
 
-  createUser(email: string, password: string): Promise<User> {
+  createUser(email: string, password: string, name: string): Promise<User> {
     return this.prisma.user.create({
-      data: { email, password },
+      data: { email, password, name },
     });
   }
 

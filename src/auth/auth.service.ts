@@ -46,7 +46,7 @@ export class AuthService {
     };
   }
 
-  async register(email: string, password: string) {
+  async register(email: string, password: string, name: string) {
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
       throw new BadRequestException('Email already in use');
@@ -54,7 +54,11 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await this.usersService.createUser(email, hashedPassword);
+    const user = await this.usersService.createUser(
+      email,
+      hashedPassword,
+      name,
+    );
 
     if (!user) throw new BadRequestException('Failed to create user');
 
@@ -63,13 +67,6 @@ export class AuthService {
     const entry = await this.tokenService.generateEmailVerificationToken(
       user.email,
     );
-    await this.prisma.verificationToken.create({
-      data: {
-        email,
-        token: entry.token,
-        expires: new Date(Date.now() + 3600 * 1000),
-      },
-    });
 
     await this.emailService.sendVerificationEmail(email, entry.token);
 

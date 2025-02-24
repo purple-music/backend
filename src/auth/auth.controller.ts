@@ -49,12 +49,14 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() body: { email: string; password: string }) {
-    return this.authService.register(body.email, body.password);
+  async register(
+    @Body() body: { email: string; password: string; name: string },
+  ) {
+    return this.authService.register(body.email, body.password, body.name);
   }
 
   @Post('verify')
-  async verify(@Query('token') token: string) {
-    return this.authService.verifyEmailToken(token);
+  async verify(@Body() body: { token: string }) {
+    return this.authService.verifyEmailToken(body.token);
   }
 }
