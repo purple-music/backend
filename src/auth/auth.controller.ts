@@ -10,8 +10,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
-import { ErrorResponse } from './dtos/error.response';
 import { VerifyEmailResponseDto } from './dtos/verify-email-response.dto';
+import { ValidationErrorResponse } from '../common/dtos/validation-error.response.dto';
+import { ApiValidationResponse } from '../common/api-validation-response.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -63,10 +64,7 @@ export class AuthController {
     description: 'Verification success.',
     type: VerifyEmailResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Invalid or expired token.',
-    type: ErrorResponse,
-  })
+  @ApiValidationResponse()
   async verify(@Body() body: VerifyEmailDto) {
     return this.authService.verifyEmailToken(body.token);
   }

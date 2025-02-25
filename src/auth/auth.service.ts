@@ -6,6 +6,8 @@ import { JwtService } from '@nestjs/jwt';
 import { TokenService } from './token.service';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from './email.service';
+import { ValidationException } from '../common/validation-exception';
+import { ErrorFormatter } from '../common/error-formatter';
 
 type LoginUser = {
   email: string;
@@ -79,7 +81,14 @@ export class AuthService {
     });
 
     if (!record || record.expires < new Date()) {
-      throw new BadRequestException('Token is invalid or expired');
+      throw new ValidationException(
+        ErrorFormatter.format([
+          {
+            field: 'token',
+            messages: ['Token is invalid or expired'],
+          },
+        ]),
+      );
     }
 
     // Set email as verified

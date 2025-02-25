@@ -32,7 +32,7 @@ export class ValidationErrorResponse {
 
   @ApiProperty({
     description: 'Error message',
-    example: 'Validation failed',
+    example: 'Validation Failed',
   })
   message: string;
 
