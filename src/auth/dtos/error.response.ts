@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ErrorResponseDto {
+export class ErrorResponse {
   @ApiProperty({ example: 'INVALID_TOKEN' })
   error: string;
 
