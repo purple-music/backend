@@ -1,4 +1,12 @@
-import { Controller, Post, UseGuards, Req, Get, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UseGuards,
+  Req,
+  Get,
+  Body,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { EmailAuthGuard } from './email-auth.guard';
@@ -7,12 +15,15 @@ import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { VerifyEmailResponseDto } from './dtos/verify-email-response.dto';
 import { ValidationErrorResponse } from '../common/dtos/validation-error.response.dto';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
+import { RegisterResponseDto } from './dtos/register-response.dto';
+import { RegisterDto } from './dtos/register.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -52,9 +63,12 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(
-    @Body() body: { email: string; password: string; name: string },
-  ) {
+  @ApiOperation({ summary: 'Register user' })
+  @ApiCreatedResponse({
+    description: 'User registered.',
+    type: RegisterResponseDto,
+  })
+  async register(@Body() body: RegisterDto) {
     return this.authService.register(body.email, body.password, body.name);
   }
 
