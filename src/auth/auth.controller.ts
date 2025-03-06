@@ -12,7 +12,6 @@ import { AuthService } from './auth.service';
 import { EmailAuthGuard } from './email-auth.guard';
 import { JwtAuthGuard } from './jwt-auth-guard';
 import {
-  ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOperation,
   ApiResponse,
@@ -20,10 +19,10 @@ import {
 } from '@nestjs/swagger';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { VerifyEmailResponseDto } from './dtos/verify-email-response.dto';
-import { ValidationErrorResponse } from '../common/dtos/validation-error.response.dto';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
 import { RegisterResponseDto } from './dtos/register-response.dto';
 import { RegisterDto } from './dtos/register.dto';
+import { LoginResponseDto } from './dtos/login-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -32,9 +31,11 @@ export class AuthController {
 
   @UseGuards(EmailAuthGuard)
   @Post('login')
+  @ApiValidationResponse()
+  @ApiResponse({ status: 200, type: LoginResponseDto })
   login(@Req() req: Request) {
     if (!req.user || !req.user.email) {
-      return { error: 'Unauthorized' };
+      throw new UnauthorizedException('Invalid credentials');
     }
     return this.authService.login({
       email: req.user.email,
