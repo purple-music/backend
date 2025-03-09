@@ -6,8 +6,9 @@ import {
   Get,
   Body,
   UnauthorizedException,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { EmailAuthGuard } from './email-auth.guard';
 import { JwtAuthGuard } from './jwt-auth-guard';
@@ -29,17 +30,31 @@ import { LoginResponseDto } from './dtos/login-response.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // TODO: consider using ApiCookieAuth() decorator
   @UseGuards(EmailAuthGuard)
   @Post('login')
   @ApiValidationResponse()
   @ApiResponse({ status: 200, type: LoginResponseDto })
-  login(@Req() req: Request) {
+  login(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    return this.authService.login({
+
+    const accessToken = this.authService.login({
       email: req.user.email,
       id: req.user.id,
+    });
+
+    res.cookie('token', accessToken.access_token, {
+      httpOnly: true, // Prevents client-side access
+      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+      sameSite: 'strict', // Prevents CSRF attacks
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/', // Accessible across the entire site
+    });
+
+    return res.status(200).json({
+      message: 'Login successful',
     });
   }
 

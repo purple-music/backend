@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ErrorFormatter } from './common/error-formatter';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -34,6 +36,10 @@ async function bootstrap() {
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
+
+  // Write the OpenAPI specification to a file
+  const outputPath = join(__dirname, '..', 'swagger.json');
+  writeFileSync(outputPath, JSON.stringify(documentFactory(), null, 2));
 
   SwaggerModule.setup('api', app, documentFactory);
 
