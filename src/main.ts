@@ -5,6 +5,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ErrorFormatter } from './common/error-formatter';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -42,6 +43,8 @@ async function bootstrap() {
   writeFileSync(outputPath, JSON.stringify(documentFactory(), null, 2));
 
   SwaggerModule.setup('api', app, documentFactory);
+
+  app.use(cookieParser());
 
   await app.listen(process.env.PORT ?? 3000);
 }

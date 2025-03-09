@@ -1,12 +1,12 @@
 import {
-  Controller,
-  Post,
-  UseGuards,
-  Req,
-  Get,
   Body,
-  UnauthorizedException,
+  Controller,
+  Get,
+  Post,
+  Req,
   Res,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -24,11 +24,16 @@ import { ApiValidationResponse } from '../common/api-validation-response.decorat
 import { RegisterResponseDto } from './dtos/register-response.dto';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginResponseDto } from './dtos/login-response.dto';
+import { UsersService } from '../users/users.service';
+import { ProfileResponseDto } from './dtos/profile-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private userService: UsersService,
+  ) {}
 
   // TODO: consider using ApiCookieAuth() decorator
   @UseGuards(EmailAuthGuard)
@@ -74,8 +79,29 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Req() req: Request) {
-    return req.user;
+  @ApiOperation({ summary: 'Get user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile',
+    type: ProfileResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async profile(@Req() req: Request) {
+    if (!req.user || !req.user.email) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const user = await this.userService.findByEmail(req.user.email);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: user.image,
+    };
   }
 
   @Post('register')
