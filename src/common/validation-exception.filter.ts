@@ -5,7 +5,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { ValidationException } from './validation-exception';
-import { ValidationErrorResponse } from './dtos/validation-error.response.dto';
+import { ValidationErrorResponseDto } from './dtos/validation-error.response.dto';
 import { Response } from 'express';
 
 @Catch()
@@ -14,11 +14,11 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    let errorResponse: ValidationErrorResponse;
+    let errorResponse: ValidationErrorResponseDto;
 
     if (exception instanceof ValidationException) {
       // Already standardized
-      errorResponse = exception.getResponse() as ValidationErrorResponse;
+      errorResponse = exception.getResponse() as ValidationErrorResponseDto;
     } else {
       // Don't handle other types of exceptions
       return;

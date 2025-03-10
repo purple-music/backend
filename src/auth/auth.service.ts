@@ -54,7 +54,7 @@ export class AuthService {
   async register(email: string, password: string, name: string) {
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
-      throw new BadRequestException('Email already in use');
+      throw ValidationException.format('email', 'Email already in use');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -65,9 +65,12 @@ export class AuthService {
       name,
     );
 
-    if (!user) throw new BadRequestException('Failed to create user');
-
-    if (!user.email) throw new BadRequestException('No email found for user');
+    if (!user) {
+      throw ValidationException.format('email', 'Failed to create user');
+    }
+    if (!user.email) {
+      throw ValidationException.format('email', 'No email found for user');
+    }
 
     const entry = await this.tokenService.generateEmailVerificationToken(
       user.email,
@@ -84,14 +87,7 @@ export class AuthService {
     });
 
     if (!record || record.expires < new Date()) {
-      throw new ValidationException(
-        ErrorFormatter.format([
-          {
-            field: 'token',
-            messages: ['Token is invalid or expired'],
-          },
-        ]),
-      );
+      throw ValidationException.format('token', 'Token is invalid or expired');
     }
 
     // Set email as verified

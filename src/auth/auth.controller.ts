@@ -13,19 +13,25 @@ import { AuthService } from './auth.service';
 import { EmailAuthGuard } from './email-auth.guard';
 import { JwtAuthGuard } from './jwt-auth-guard';
 import {
+  ApiBody,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { VerifyEmailResponseDto } from './dtos/verify-email-response.dto';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
 import { RegisterResponseDto } from './dtos/register-response.dto';
-import { RegisterDto } from './dtos/register.dto';
+import { RegisterRequestDto } from './dtos/register-request.dto';
 import { LoginResponseDto } from './dtos/login-response.dto';
 import { UsersService } from '../users/users.service';
 import { ProfileResponseDto } from './dtos/profile-response.dto';
+import { LoginRequestDto } from './dtos/login-request.dto';
+import { UnauthorizedResponseDto } from './dtos/unauthorized-response.dto';
+import { LogoutResponseDto } from './dtos/logout-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,11 +41,15 @@ export class AuthController {
     private userService: UsersService,
   ) {}
 
-  // TODO: consider using ApiCookieAuth() decorator
   @UseGuards(EmailAuthGuard)
   @Post('login')
-  @ApiValidationResponse()
-  @ApiResponse({ status: 200, type: LoginResponseDto })
+  @ApiBody({ type: LoginRequestDto })
+  @ApiValidationResponse() // 400
+  @ApiUnauthorizedResponse({
+    type: UnauthorizedResponseDto,
+    description: 'Invalid credentials',
+  }) // 401
+  @ApiOkResponse({ type: LoginResponseDto })
   login(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
       throw new UnauthorizedException('Invalid credentials');
@@ -65,16 +75,16 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Req() req: Request) {
-    return new Promise((resolve, reject) => {
-      req.logout((err: Error) => {
-        if (err) {
-          console.error(`Error logging out: ${err}`);
-          return reject(err);
-        }
-        resolve('Logged out successfully');
-      });
+  @ApiOkResponse({ type: LogoutResponseDto })
+  logout(@Req() req: Request, @Res() res: Response) {
+    res.clearCookie('token', {
+      httpOnly: true, // Prevents client-side access
+      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+      sameSite: 'strict', // Prevents CSRF attacks
+      path: '/', // Clear cookie across the entire site
     });
+
+    return res.status(200).json({ message: 'Logout successful' });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -85,7 +95,11 @@ export class AuthController {
     description: 'User profile',
     type: ProfileResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedResponseDto,
+  })
   async profile(@Req() req: Request) {
     if (!req.user || !req.user.email) {
       throw new UnauthorizedException('Invalid credentials');
@@ -106,11 +120,13 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register user' })
+  @ApiBody({ type: RegisterRequestDto })
   @ApiCreatedResponse({
-    description: 'User registered.',
+    description: 'User registered',
     type: RegisterResponseDto,
   })
-  async register(@Body() body: RegisterDto) {
+  @ApiValidationResponse()
+  async register(@Body() body: RegisterRequestDto) {
     return this.authService.register(body.email, body.password, body.name);
   }
 

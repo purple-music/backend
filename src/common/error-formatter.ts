@@ -1,18 +1,18 @@
 import { ValidationError } from 'class-validator';
 import {
-  ValidationErrorItem,
-  ValidationErrorResponse,
+  ValidationErrorItemDto,
+  ValidationErrorResponseDto,
 } from './dtos/validation-error.response.dto';
 
 export class ErrorFormatter {
   static format(
-    errors: ValidationError[] | ValidationErrorItem[],
+    errors: ValidationError[] | ValidationErrorItemDto[],
     message: string = 'Validation Failed',
-  ): ValidationErrorResponse {
+  ): ValidationErrorResponseDto {
     const formattedErrors =
       Array.isArray(errors) && errors[0] instanceof ValidationError
         ? this.formatClassValidatorErrors(errors as ValidationError[])
-        : (errors as ValidationErrorItem[]);
+        : (errors as ValidationErrorItemDto[]);
 
     return {
       statusCode: 400,
@@ -24,7 +24,7 @@ export class ErrorFormatter {
 
   private static formatClassValidatorErrors(
     errors: ValidationError[],
-  ): ValidationErrorItem[] {
+  ): ValidationErrorItemDto[] {
     return errors.map((error) => ({
       field: error.property,
       messages: error.constraints ? Object.values(error.constraints) : [],

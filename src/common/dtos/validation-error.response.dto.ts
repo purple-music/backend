@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ValidationErrorItem {
+export class ValidationErrorItemDto {
   @ApiProperty({
     description: 'The field that failed validation',
     example: 'email',
@@ -17,13 +17,13 @@ export class ValidationErrorItem {
 
   @ApiProperty({
     description: 'Nested validation errors',
-    type: () => [ValidationErrorItem],
+    type: () => [ValidationErrorItemDto],
     required: false,
   })
-  children?: ValidationErrorItem[];
+  children?: ValidationErrorItemDto[];
 }
 
-export class ValidationErrorResponse {
+export class ValidationErrorResponseDto {
   @ApiProperty({
     description: 'HTTP status code',
     example: 400,
@@ -38,9 +38,9 @@ export class ValidationErrorResponse {
 
   @ApiProperty({
     description: 'List of validation errors',
-    type: [ValidationErrorItem],
+    type: [ValidationErrorItemDto],
   })
-  errors: ValidationErrorItem[];
+  errors: ValidationErrorItemDto[];
 
   @ApiProperty({
     description: 'Timestamp of the error',

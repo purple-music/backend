@@ -1,12 +1,12 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBadRequestResponse } from '@nestjs/swagger';
-import { ValidationErrorResponse } from './dtos/validation-error.response.dto';
+import { ValidationErrorResponseDto } from './dtos/validation-error.response.dto';
 
 export function ApiValidationResponse() {
   return applyDecorators(
     ApiBadRequestResponse({
       description: 'Validation Failed',
-      type: ValidationErrorResponse,
+      type: ValidationErrorResponseDto,
       example: {
         message: 'Validation Failed',
         errors: [
