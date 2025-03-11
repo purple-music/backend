@@ -32,6 +32,10 @@ import { ProfileResponseDto } from './dtos/profile-response.dto';
 import { LoginRequestDto } from './dtos/login-request.dto';
 import { UnauthorizedResponseDto } from './dtos/unauthorized-response.dto';
 import { LogoutResponseDto } from './dtos/logout-response.dto';
+import { ResetPasswordRequestDto } from './dtos/reset-password-request.dto';
+import { ResetPasswordResponseDto } from './dtos/reset-password-response.dto';
+import { NewPasswordRequestDto } from './dtos/new-password-request.dto';
+import { NewPasswordResponseDto } from './dtos/new-password-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -71,6 +75,24 @@ export class AuthController {
     return res.status(200).json({
       message: 'Login successful',
     });
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiBody({ type: ResetPasswordRequestDto })
+  @ApiValidationResponse() // 400
+  @ApiCreatedResponse({ type: ResetPasswordResponseDto }) // 201
+  async resetPassword(@Body() body: ResetPasswordRequestDto) {
+    return this.authService.resetPassword(body.email);
+  }
+
+  @Post('new-password')
+  @ApiOperation({ summary: 'New password' })
+  @ApiBody({ type: NewPasswordRequestDto })
+  @ApiValidationResponse() // 400
+  @ApiCreatedResponse({ type: NewPasswordResponseDto }) // 201
+  async newPassword(@Body() body: NewPasswordRequestDto) {
+    return this.authService.newPassword(body.token, body.password);
   }
 
   @UseGuards(JwtAuthGuard)

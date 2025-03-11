@@ -98,4 +98,50 @@ export class AuthService {
 
     return { message: 'Email verified successfully' };
   }
+
+  async resetPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw ValidationException.format('email', 'User not found');
+    }
+
+    if (!user.email) {
+      throw ValidationException.format('email', 'No email found for user');
+    }
+
+    const entry = await this.tokenService.generatePasswordResetToken(
+      user.email,
+    );
+
+    await this.emailService.sendPasswordResetEmail(email, entry.token);
+
+    return { message: 'Password reset email sent' };
+  }
+
+  async newPassword(token: string, password: string) {
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (!record || record.expires < new Date()) {
+      throw ValidationException.format('token', 'Token is invalid or expired');
+    }
+
+    const user = await this.usersService.findByEmail(record.email);
+    if (!user) {
+      throw ValidationException.format('email', 'User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // Delete token
+    await this.prisma.passwordResetToken.delete({ where: { token } });
+
+    return { message: 'Password reset successfully' };
+  }
 }
