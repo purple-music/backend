@@ -11,7 +11,7 @@ import {
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { EmailAuthGuard } from './email-auth.guard';
-import { JwtAuthGuard } from './jwt-auth-guard';
+import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -19,7 +19,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { VerifyEmailResponseDto } from './dtos/verify-email-response.dto';
@@ -30,12 +29,13 @@ import { LoginResponseDto } from './dtos/login-response.dto';
 import { UsersService } from '../users/users.service';
 import { ProfileResponseDto } from './dtos/profile-response.dto';
 import { LoginRequestDto } from './dtos/login-request.dto';
-import { UnauthorizedResponseDto } from './dtos/unauthorized-response.dto';
+import { UnauthorizedResponseDto } from '../common/dtos/unauthorized-response.dto';
 import { LogoutResponseDto } from './dtos/logout-response.dto';
 import { ResetPasswordRequestDto } from './dtos/reset-password-request.dto';
 import { ResetPasswordResponseDto } from './dtos/reset-password-response.dto';
 import { NewPasswordRequestDto } from './dtos/new-password-request.dto';
 import { NewPasswordResponseDto } from './dtos/new-password-response.dto';
+import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -49,10 +49,7 @@ export class AuthController {
   @Post('login')
   @ApiBody({ type: LoginRequestDto })
   @ApiValidationResponse() // 400
-  @ApiUnauthorizedResponse({
-    type: UnauthorizedResponseDto,
-    description: 'Invalid credentials',
-  }) // 401
+  @ApiJwtUnauthorizedResponse() // 401
   @ApiOkResponse({ type: LoginResponseDto })
   login(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
