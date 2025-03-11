@@ -8,6 +8,17 @@ export class PrismaService
 {
   async onModuleInit() {
     await this.$connect();
+
+    const studios = [{ id: 'purple' }, { id: 'orange' }, { id: 'blue' }];
+
+    for (const studio of studios) {
+      await this.studio.upsert({
+        where: { id: studio.id },
+        update: {},
+        create: studio,
+      });
+    }
+    console.log('Studios are initialized!');
   }
 
   async onModuleDestroy() {
