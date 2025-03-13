@@ -1,12 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsDateString,
-  IsInt,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsInt, IsISO8601, IsOptional, IsString, Min } from 'class-validator';
 
 export type StudioId = 'blue' | 'orange' | 'purple';
 
@@ -51,20 +44,18 @@ export class BookingFilterDto {
 
   @ApiPropertyOptional({
     description: 'Start date in ISO format',
-    example: '2024-03-01T00:00:00Z',
+    example: '2024-03-01',
   })
   @IsOptional()
-  @Type(() => Date)
-  @IsDateString()
+  @IsISO8601({ strict: false })
   startDate?: string;
 
   @ApiPropertyOptional({
     description: 'End date in ISO format',
-    example: '2024-03-31T23:59:59Z',
+    example: '2024-03-31',
   })
   @IsOptional()
-  @Type(() => Date)
-  @IsDateString()
+  @IsISO8601({ strict: false })
   endDate?: string;
 
   @ApiPropertyOptional({ description: 'Number of people', example: 5 })

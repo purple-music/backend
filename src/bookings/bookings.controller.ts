@@ -9,6 +9,7 @@ import { BookingsService } from './bookings.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { BookingDto, BookingFilterDto, BookingsResponse } from './dto/bookings';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
+import { ApiValidationResponse } from '../common/api-validation-response.decorator';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -22,7 +23,8 @@ export class BookingsController {
     description: 'List of all bookings',
     type: BookingsResponse,
   })
-  @ApiJwtUnauthorizedResponse()
+  @ApiValidationResponse() // 400
+  @ApiJwtUnauthorizedResponse() // 401
   async getBookings(@Query() filter: BookingFilterDto) {
     return await this.bookingsService.getBookings(filter);
   }

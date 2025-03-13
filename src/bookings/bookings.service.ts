@@ -24,8 +24,8 @@ export class BookingsService {
         },
         studioId: studioId,
         slotTime: {
-          gte: startDate,
-          lte: endDate,
+          gte: startDate ? new Date(startDate) : undefined,
+          lte: endDate ? new Date(endDate) : undefined,
         },
         peopleCount: peopleCount ? { gte: peopleCount } : undefined,
       },
