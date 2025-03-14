@@ -44,12 +44,16 @@ model User {
   updatedAt DateTime @updatedAt
 
   accounts Account[]
-  orders   Order[]
+  orders   Booking[]
 }
 
-model Booking {
-  id          Int      @id @default(autoincrement())
-  slotTime    DateTime
+model TimeSlot {
+  id Int @id @default(autoincrement())
+
+  startTime DateTime
+  endTime   DateTime
+
+  // How many people are expected to come
   peopleCount Int
 
   createdAt DateTime @default(now())
@@ -58,17 +62,17 @@ model Booking {
   studioId String
   studio   Studio @relation(fields: [studioId], references: [id])
 
-  orderId Int
-  order   Order @relation(fields: [orderId], references: [id])
+  bookingId Int
+  booking   Booking @relation(fields: [bookingId], references: [id])
 }
 
 model Studio {
   id String @id
 
-  bookings Booking[]
+  timeSlots TimeSlot[]
 }
 
-model Order {
+model Booking {
   id Int @id @default(autoincrement())
 
   updatedAt DateTime @updatedAt
@@ -77,7 +81,7 @@ model Order {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  bookings Booking[]
+  timeSlots TimeSlot[]
 }
 
 // TODO: rename to "EmailVerificationToken"

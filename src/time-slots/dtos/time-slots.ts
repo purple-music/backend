@@ -1,13 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsISO8601, IsOptional, IsString, Min } from 'class-validator';
 
-export type StudioId = 'blue' | 'orange' | 'purple';
-
-export class BookingDto {
+export class TimeSlotDto {
   @ApiProperty()
   id: number;
   @ApiProperty()
-  slotTime: Date;
+  startTime: Date;
+  @ApiProperty()
+  endTime: Date;
   @ApiProperty()
   peopleCount: number;
   @ApiProperty()
@@ -17,17 +17,17 @@ export class BookingDto {
   @ApiProperty()
   studioId: string;
   @ApiProperty()
-  orderId: number;
+  bookingId: number;
 }
 
-export class BookingsResponse {
-  @ApiProperty({ type: () => [BookingDto] })
-  bookings: BookingDto[];
+export class TimeSlotsDto {
+  @ApiProperty({ type: () => [TimeSlotDto] })
+  timeSlots: TimeSlotDto[];
 }
 
-export class BookingFilterDto {
+export class TimeSlotFilterDto {
   @ApiPropertyOptional({
-    description: 'User ID to filter bookings',
+    description: 'User ID to filter time slots',
     example: '123',
   })
   @IsOptional()
@@ -35,7 +35,7 @@ export class BookingFilterDto {
   userId?: string;
 
   @ApiPropertyOptional({
-    description: 'Studio ID to filter bookings',
+    description: 'Studio ID to filter time slots',
     example: 'studio-456',
   })
   @IsOptional()
@@ -79,26 +79,3 @@ export class BookingFilterDto {
   @Min(1)
   limit?: number;
 }
-
-export class PersonalBooking {
-  studio: StudioId;
-  time: Date;
-  people: number;
-  status: 'unpaid' | 'paid' | 'cancelled';
-  cost: number;
-}
-
-export class BookingSlotInfo {
-  studioId: StudioId;
-  slotTime: Date;
-  price: number;
-}
-
-export class GetAvailableSlotsDto {
-  from: Date;
-  to: Date;
-}
-
-export type Result<T, E> =
-  | { success: true; data: T }
-  | { success: false; error: E };

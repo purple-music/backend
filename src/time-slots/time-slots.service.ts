@@ -1,50 +1,41 @@
 import { Injectable } from '@nestjs/common';
-import { BookingDto, BookingFilterDto } from './dto/bookings';
+import { TimeSlotDto, TimeSlotFilterDto } from './dtos/time-slots';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
-export class BookingsService {
+export class TimeSlotsService {
   constructor(private prisma: PrismaService) {}
 
-  async getBookings(filterDto: BookingFilterDto): Promise<BookingDto[]> {
-    const {
-      userId,
-      studioId,
-      startDate,
-      endDate,
-      peopleCount,
-      page = 1,
-      limit = 10,
-    } = filterDto;
+  async getTimeSlots(filterDto: TimeSlotFilterDto): Promise<TimeSlotDto[]> {
+    const { userId, studioId, startDate, endDate, peopleCount, page, limit } =
+      filterDto;
 
-    return this.prisma.booking.findMany({
+    return this.prisma.timeSlot.findMany({
       where: {
-        order: {
+        booking: {
           userId: userId,
         },
         studioId: studioId,
-        slotTime: {
-          gte: startDate ? new Date(startDate) : undefined,
-          lte: endDate ? new Date(endDate) : undefined,
-        },
+        startTime: startDate ? new Date(startDate) : undefined,
+        endTime: endDate ? new Date(endDate) : undefined,
         peopleCount: peopleCount ? { gte: peopleCount } : undefined,
       },
       include: {
-        order: true,
+        booking: true,
         studio: true,
       },
-      take: limit,
-      skip: (page - 1) * limit,
+      take: limit ? limit : undefined,
+      skip: page && limit ? (page - 1) * limit : undefined,
       orderBy: {
-        slotTime: 'asc',
+        startTime: 'asc',
       },
     });
   }
 
-  async getBookingsByUserId(userId: string): Promise<BookingDto[]> {
-    return this.prisma.booking.findMany({
+  async getTimeSlotsByUserId(userId: string): Promise<TimeSlotDto[]> {
+    return this.prisma.timeSlot.findMany({
       where: {
-        order: {
+        booking: {
           userId: userId,
         },
       },

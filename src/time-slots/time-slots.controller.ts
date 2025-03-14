@@ -1,44 +1,43 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
-import { BookingsService } from './bookings.service';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { TimeSlotsService } from './time-slots.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
-import { BookingDto, BookingFilterDto, BookingsResponse } from './dto/bookings';
+import {
+  TimeSlotDto,
+  TimeSlotFilterDto,
+  TimeSlotsDto,
+} from './dtos/time-slots';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
 
-@ApiTags('Bookings')
-@Controller('bookings')
-export class BookingsController {
-  constructor(private bookingsService: BookingsService) {}
+@ApiTags('TimeSlots')
+@Controller('time-slots')
+export class TimeSlotsController {
+  constructor(private timeSlotsService: TimeSlotsService) {}
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  @ApiOperation({ summary: 'Get all bookings' })
+  @ApiOperation({ summary: 'Get all time slots' })
   @ApiOkResponse({
-    description: 'List of all bookings',
-    type: BookingsResponse,
+    description: 'List of all time slots',
+    type: TimeSlotsDto,
   })
   @ApiValidationResponse() // 400
   @ApiJwtUnauthorizedResponse() // 401
-  async getBookings(@Query() filter: BookingFilterDto) {
-    return await this.bookingsService.getBookings(filter);
+  async getTimeSlots(@Query() filter: TimeSlotFilterDto) {
+    return await this.timeSlotsService.getTimeSlots(filter);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
-  @ApiOperation({ summary: 'Get bookings by user ID' })
+  @ApiOperation({ summary: 'Get time slots by user ID' })
   @ApiOkResponse({
-    description: 'List of bookings for the specified user',
-    type: [BookingDto],
+    description: 'List of time slots for the specified user',
+    type: [TimeSlotDto],
   })
   @ApiJwtUnauthorizedResponse()
-  async getBookingsByUserId(@Param('userId') userId: string) {
-    return await this.bookingsService.getBookingsByUserId(userId);
+  async getTimeSlotsByUserId(@Param('userId') userId: string) {
+    return await this.timeSlotsService.getTimeSlotsByUserId(userId);
   }
 
   // @UseGuards(JwtAuthGuard)
@@ -46,7 +45,7 @@ export class BookingsController {
   // @ApiOperation({ summary: 'Get transformed bookings by user ID' })
   // @ApiOkResponse({ description: 'Transformed bookings grouped by day' })
   // async getTransformedBookingsByUserId(@Param('userId') userId: string) {
-  //   return await this.bookingsService.getTransformedBookingsByUserId(userId);
+  //   return await this.timeSlotsService.getTransformedBookingsByUserId(userId);
   // }
   //
   // @UseGuards(JwtAuthGuard)
@@ -56,7 +55,7 @@ export class BookingsController {
   //   description: 'List of current bookings for the specified user',
   // })
   // async getCurrentBookingsByUserId(@Param('userId') userId: string) {
-  //   return await this.bookingsService.getCurrentBookingsByUserId(userId);
+  //   return await this.timeSlotsService.getCurrentBookingsByUserId(userId);
   // }
   //
   // @UseGuards(JwtAuthGuard)
@@ -70,6 +69,6 @@ export class BookingsController {
   //   @Query('from') from: string,
   //   @Query('to') to: string,
   // ) {
-  //   return await this.bookingsService.getAvailableSlots(from, to);
+  //   return await this.timeSlotsService.getAvailableSlots(from, to);
   // }
 }
