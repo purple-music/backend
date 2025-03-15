@@ -44,7 +44,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   accounts Account[]
-  orders   Booking[]
+  bookings Booking[]
 }
 
 model TimeSlot {
@@ -55,6 +55,9 @@ model TimeSlot {
 
   // How many people are expected to come
   peopleCount Int
+
+  // Price of the time slot in roubles (two decimal places)
+  price Decimal @db.Decimal(10, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,6 +73,8 @@ model Studio {
   id String @id
 
   timeSlots TimeSlot[]
+
+  hourlyRate Decimal @db.Decimal(10, 2)
 }
 
 model Booking {

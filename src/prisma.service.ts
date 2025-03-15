@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService
@@ -9,7 +9,11 @@ export class PrismaService
   async onModuleInit() {
     await this.$connect();
 
-    const studios = [{ id: 'purple' }, { id: 'orange' }, { id: 'blue' }];
+    const studios = [
+      { id: 'purple', hourlyRate: new Prisma.Decimal(500.0) },
+      { id: 'orange', hourlyRate: new Prisma.Decimal(500.0) },
+      { id: 'blue', hourlyRate: new Prisma.Decimal(600.0) },
+    ];
 
     for (const studio of studios) {
       await this.studio.upsert({
