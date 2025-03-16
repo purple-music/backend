@@ -10,15 +10,21 @@ import { ValidationException } from '../common/validation-exception';
 import {
   GetPricesDto,
   PricedTimeSlotDto,
-  PricesResponseDto,
+  PricesStudioResponseDto,
 } from './dtos/get-prices.dto';
 
 @Injectable()
 export class BookingsService {
   constructor(private prisma: PrismaService) {}
 
-  async makeBooking(data: MakeBookingDto, user: User): Promise<BookingDto> {
+  async makeBooking(
+    data: MakeBookingDto,
+    userId: User['id'],
+  ): Promise<BookingDto> {
     const { slots } = data;
+
+    // Check that to is after from
+    this.validateTimeSlots(slots);
 
     // Check if all studios exist
     const studios = await this.validateStudios(
@@ -32,7 +38,20 @@ export class BookingsService {
     const pricedTimeSlots = this.createTimeSlotsWithPrices(slots, studios);
 
     // Create booking with time slots
-    return this.createBookingWithTimeSlots(user.id, pricedTimeSlots);
+    return this.createBookingWithTimeSlots(userId, pricedTimeSlots);
+  }
+
+  private validateTimeSlots(slots: MakeTimeSlotDto[]) {
+    for (const slot of slots) {
+      if (slot.startTime >= slot.endTime) {
+        throw ValidationException.format(
+          'slots',
+          'End time must be after start time',
+        );
+      }
+    }
+
+    return slots.length > 0;
   }
 
   private createBookingWithTimeSlots(
@@ -79,14 +98,24 @@ export class BookingsService {
   }
 
   private async validateStudios(studioIds: string[]): Promise<Studio[]> {
+    // Remove duplicates from studioIds
+    const uniqueStudioIds = [...new Set(studioIds)];
+
     const studios = await this.prisma.studio.findMany({
-      where: { id: { in: studioIds } },
+      where: {
+        id: {
+          in: uniqueStudioIds,
+        },
+      },
     });
 
-    if (studios.length !== studioIds.length) {
+    if (studios.length !== uniqueStudioIds.length) {
+      const missingStudioIds = uniqueStudioIds.filter(
+        (id) => !studios.some((studio) => studio.id === id),
+      );
       throw ValidationException.format(
         'slots',
-        'One or more studios do not exist.',
+        `One or more studios do not exist: ${missingStudioIds.join(', ')}`,
       );
     }
 
@@ -96,8 +125,8 @@ export class BookingsService {
   private async validateNoOverlappingBookings(
     slots: Array<{
       studio: string;
-      startTime: Date;
-      endTime: Date;
+      startTime: string;
+      endTime: string;
     }>,
   ): Promise<void> {
     for (const slot of slots) {
@@ -118,8 +147,12 @@ export class BookingsService {
     }
   }
 
-  async getPrices(data: GetPricesDto): Promise<PricesResponseDto> {
-    const { from, to, studioId } = data;
+  async getPrices(
+    data: GetPricesDto,
+    studioId: string,
+  ): Promise<PricesStudioResponseDto> {
+    const from = new Date(data.from);
+    const to = new Date(data.to);
 
     const studio = await this.prisma.studio.findUnique({
       where: {
@@ -145,7 +178,16 @@ export class BookingsService {
     // Step 3: Return the free time slots
     return {
       prices: freeTimeSlots,
+      studioId: studioId,
     };
+  }
+
+  async getAllPrices(data: GetPricesDto): Promise<PricesStudioResponseDto[]> {
+    return Promise.all(
+      (await this.prisma.studio.findMany()).map((studio) =>
+        this.getPrices(data, studio.id),
+      ),
+    );
   }
 
   /**
@@ -220,7 +262,11 @@ export class BookingsService {
       }
       if (slotEndTime <= rangeEnd) {
         freeTimeSlots.push(
-          this.createPricedTimeSlot(currentTime, slotEndTime, studio),
+          this.createPricedTimeSlot(
+            currentTime.toISOString(),
+            slotEndTime.toISOString(),
+            studio,
+          ),
         );
       }
       currentTime = slotEndTime; // Move to the next hour
@@ -243,7 +289,11 @@ export class BookingsService {
         slotEndTime.setTime(rangeEnd.getTime());
       }
       freeTimeSlots.push(
-        this.createPricedTimeSlot(currentTime, slotEndTime, studio),
+        this.createPricedTimeSlot(
+          currentTime.toISOString(),
+          slotEndTime.toISOString(),
+          studio,
+        ),
       );
       currentTime = slotEndTime; // Move to the next hour
     }
@@ -253,8 +303,8 @@ export class BookingsService {
    * Creates a PricedTimeSlotDto object.
    */
   private createPricedTimeSlot(
-    startTime: Date,
-    endTime: Date,
+    startTime: string,
+    endTime: string,
     studio: Studio,
   ): PricedTimeSlotDto {
     return {
@@ -266,12 +316,16 @@ export class BookingsService {
   }
 
   private calculatePrice(
-    startTime: Date,
-    endTime: Date,
+    startTime: string,
+    endTime: string,
     studio: Studio,
   ): number {
-    const durationInMinutes = (endTime.getTime() - startTime.getTime()) / 60000;
-    return durationInMinutes * this.getHourlyRate(studio).toNumber();
+    const durationInHours =
+      (new Date(endTime).getTime() - new Date(startTime).getTime()) /
+      1000 /
+      60 /
+      60;
+    return durationInHours * this.getHourlyRate(studio).toNumber();
   }
 
   private getHourlyRate(studio: Studio): Prisma.Decimal {

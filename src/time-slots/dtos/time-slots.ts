@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { IsInt, IsISO8601, IsOptional, IsString, Min } from 'class-validator';
 
 export class TimeSlotDto {
@@ -18,6 +19,8 @@ export class TimeSlotDto {
   studioId: string;
   @ApiProperty()
   bookingId: number;
+  @ApiProperty()
+  price: Prisma.Decimal;
 }
 
 export class TimeSlotsDto {

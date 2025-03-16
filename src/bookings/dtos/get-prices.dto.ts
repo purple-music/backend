@@ -1,22 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsISO8601, IsNotEmpty, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsISO8601 } from 'class-validator';
 
 export class GetPricesDto {
   @ApiProperty()
   @IsISO8601({ strict: false })
-  @Type(() => Date)
-  from: Date;
+  from: string;
 
   @ApiProperty()
   @IsISO8601({ strict: false })
-  @Type(() => Date)
-  to: Date;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  studioId: string;
+  to: string;
 }
 
 export class PricedTimeSlotDto {
@@ -30,7 +22,10 @@ export class PricedTimeSlotDto {
   studioId: string;
 }
 
-export class PricesResponseDto {
+export class PricesStudioResponseDto {
   @ApiProperty({ type: () => [PricedTimeSlotDto] })
   prices: PricedTimeSlotDto[];
+
+  @ApiProperty()
+  studioId: string;
 }

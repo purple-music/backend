@@ -2,7 +2,9 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -15,7 +17,7 @@ import { MakeBookingDto, BookingDto } from './dtos/make-booking.dto';
 import { UsersService } from '../users/users.service';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
-import { GetPricesDto, PricesResponseDto } from './dtos/get-prices.dto';
+import { GetPricesDto, PricesStudioResponseDto } from './dtos/get-prices.dto';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -30,7 +32,7 @@ export class BookingsController {
   @ApiBody({ type: MakeBookingDto })
   @ApiResponse({
     status: 201,
-    description: 'Booking created successfully.',
+    description: 'Successfully made a booking',
     type: BookingDto,
   })
   @ApiValidationResponse()
@@ -44,20 +46,35 @@ export class BookingsController {
       throw new UnauthorizedException('User not found');
     }
 
-    return await this.bookingsService.makeBooking(data, user);
+    return await this.bookingsService.makeBooking(data, user.id);
+  }
+
+  @Get('/prices/:studioId')
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully fetched prices',
+    type: PricesStudioResponseDto,
+  })
+  @ApiValidationResponse()
+  @ApiJwtUnauthorizedResponse()
+  async getPrices(
+    @Query() filter: GetPricesDto,
+    @Param('studioId') studioId: string,
+  ) {
+    return await this.bookingsService.getPrices(filter, studioId);
   }
 
   @Get('/prices')
   @UseGuards(JwtAuthGuard)
-  @ApiBody({ type: GetPricesDto })
   @ApiResponse({
     status: 200,
-    description: 'Booking created successfully.',
-    type: [PricesResponseDto],
+    description: 'Prices for all studios',
+    type: [PricesStudioResponseDto],
   })
   @ApiValidationResponse()
   @ApiJwtUnauthorizedResponse()
-  async getPrices(@Body() data: GetPricesDto) {
-    return await this.bookingsService.getPrices(data);
+  async getAllPrices(@Query() filter: GetPricesDto) {
+    return await this.bookingsService.getAllPrices(filter);
   }
 }

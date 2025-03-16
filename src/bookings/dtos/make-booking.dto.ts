@@ -1,16 +1,24 @@
-import { IsArray, IsInt, IsNotEmpty, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsISO8601,
+  IsNotEmpty,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { TimeSlotDto } from '../../time-slots/dtos/time-slots';
 
 export class MakeTimeSlotDto {
   @ApiProperty()
+  @IsISO8601()
   @IsNotEmpty()
-  startTime: Date;
+  startTime: string;
 
   @ApiProperty()
+  @IsISO8601()
   @IsNotEmpty()
-  endTime: Date;
+  endTime: string;
 
   @ApiProperty()
   @IsNotEmpty()
