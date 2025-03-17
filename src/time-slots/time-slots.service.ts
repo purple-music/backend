@@ -1,23 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { TimeSlotDto, TimeSlotFilterDto } from './dtos/time-slots';
+import {
+  TimeSlotDto,
+  TimeSlotFilterDto,
+  TimeSlotsDto,
+} from './dtos/time-slots.dto';
 import { PrismaService } from '../prisma.service';
+import { ValidationException } from '../common/validation-exception';
 
 @Injectable()
 export class TimeSlotsService {
   constructor(private prisma: PrismaService) {}
 
-  async getTimeSlots(filterDto: TimeSlotFilterDto): Promise<TimeSlotDto[]> {
-    const { userId, studioId, startDate, endDate, peopleCount, page, limit } =
+  async getTimeSlots(filterDto: TimeSlotFilterDto): Promise<TimeSlotsDto> {
+    const { userId, studioIds, startDate, endDate, peopleCount, page, limit } =
       filterDto;
 
-    return this.prisma.timeSlot.findMany({
+    await this.validateStudioIds(studioIds);
+
+    const timeSlots = await this.prisma.timeSlot.findMany({
       where: {
         booking: {
           userId: userId,
         },
-        studioId: studioId,
-        startTime: startDate ? new Date(startDate) : undefined,
-        endTime: endDate ? new Date(endDate) : undefined,
+        studioId: studioIds ? { in: studioIds } : undefined,
+        startTime: startDate ? { gte: new Date(startDate) } : undefined,
+        endTime: endDate ? { lte: new Date(endDate) } : undefined,
         peopleCount: peopleCount ? { gte: peopleCount } : undefined,
       },
       include: {
@@ -30,6 +37,28 @@ export class TimeSlotsService {
         startTime: 'asc',
       },
     });
+
+    return {
+      timeSlots,
+    };
+  }
+
+  async validateStudioIds(studioIds: string[] | undefined): Promise<void> {
+    if (studioIds && studioIds.length > 0) {
+      const studios = await this.prisma.studio.findMany({
+        where: {
+          id: {
+            in: studioIds,
+          },
+        },
+      });
+      if (studios.length !== studioIds.length) {
+        throw ValidationException.format(
+          'studioIds',
+          `One or more studios do not exist: ${studioIds.join(', ')}`,
+        );
+      }
+    }
   }
 
   async getTimeSlotsByUserId(userId: string): Promise<TimeSlotDto[]> {

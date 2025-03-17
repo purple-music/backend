@@ -6,7 +6,7 @@ import {
   TimeSlotDto,
   TimeSlotFilterDto,
   TimeSlotsDto,
-} from './dtos/time-slots';
+} from './dtos/time-slots.dto';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
 
@@ -24,7 +24,9 @@ export class TimeSlotsController {
   })
   @ApiValidationResponse() // 400
   @ApiJwtUnauthorizedResponse() // 401
-  async getTimeSlots(@Query() filter: TimeSlotFilterDto) {
+  async getTimeSlots(
+    @Query() filter: TimeSlotFilterDto,
+  ): Promise<TimeSlotsDto> {
     return await this.timeSlotsService.getTimeSlots(filter);
   }
 
@@ -36,7 +38,9 @@ export class TimeSlotsController {
     type: [TimeSlotDto],
   })
   @ApiJwtUnauthorizedResponse()
-  async getTimeSlotsByUserId(@Param('userId') userId: string) {
+  async getTimeSlotsByUserId(
+    @Param('userId') userId: string,
+  ): Promise<TimeSlotDto[]> {
     return await this.timeSlotsService.getTimeSlotsByUserId(userId);
   }
 

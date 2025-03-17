@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
-import { IsInt, IsISO8601, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class TimeSlotDto {
   @ApiProperty()
@@ -38,12 +45,14 @@ export class TimeSlotFilterDto {
   userId?: string;
 
   @ApiPropertyOptional({
-    description: 'Studio ID to filter time slots',
-    example: 'studio-456',
+    description: 'Studio IDs to filter time slots',
+    example: ['studio-456', 'studio-789'],
+    type: [String],
   })
   @IsOptional()
-  @IsString()
-  studioId?: string;
+  @IsArray()
+  @IsString({ each: true })
+  studioIds?: string[];
 
   @ApiPropertyOptional({
     description: 'Start date in ISO format',
