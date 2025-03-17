@@ -8,6 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class TimeSlotDto {
   @ApiProperty()
@@ -26,7 +27,11 @@ export class TimeSlotDto {
   studioId: string;
   @ApiProperty()
   bookingId: number;
-  @ApiProperty()
+  @ApiProperty({
+    type: String,
+    description: 'Time slot price as fixed decimal value',
+  })
+  @Transform(({ value }: { value: Prisma.Decimal }) => value.toNumber())
   price: Prisma.Decimal;
 }
 
