@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -7,7 +7,6 @@ import { TokenService } from './token.service';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from './email.service';
 import { ValidationException } from '../common/validation-exception';
-import { ErrorFormatter } from '../common/error-formatter';
 
 type LoginUser = {
   email: string;
@@ -26,15 +25,19 @@ export class AuthService {
 
   async validateUserByEmail(
     email: string,
-    pass: string,
-  ): Promise<Omit<User, 'password'> | null> {
+    password: string,
+  ): Promise<Omit<User, 'passwordHash'> | null> {
+    // Find the user with their associated email-based account
     const user = await this.usersService.findByEmail(email);
 
-    if (!user || !user.password) return null;
+    if (!user || !user.passwordHash) {
+      return null;
+    }
 
-    if (user && bcrypt.compareSync(pass, user.password)) {
+    // Compare the provided password with the stored hash
+    if (user && bcrypt.compareSync(password, user.passwordHash)) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
+      const { passwordHash, ...result } = user;
       return result;
     }
 
@@ -57,11 +60,11 @@ export class AuthService {
       throw ValidationException.format('email', 'Email already in use');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = await this.usersService.createUser(
+    const user = await this.usersService.createEmailAccount(
       email,
-      hashedPassword,
+      passwordHash,
       name,
     );
 
@@ -86,7 +89,7 @@ export class AuthService {
       where: { token },
     });
 
-    if (!record || record.expires < new Date()) {
+    if (!record || record.expiresAt < new Date()) {
       throw ValidationException.format('token', 'Token is invalid or expired');
     }
 
@@ -123,7 +126,7 @@ export class AuthService {
       where: { token },
     });
 
-    if (!record || record.expires < new Date()) {
+    if (!record || record.expiresAt < new Date()) {
       throw ValidationException.format('token', 'Token is invalid or expired');
     }
 
@@ -132,11 +135,11 @@ export class AuthService {
       throw ValidationException.format('email', 'User not found');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword },
+      data: { passwordHash },
     });
 
     // Delete token

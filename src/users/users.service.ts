@@ -12,16 +12,24 @@ export class UsersService {
     });
   }
 
-  createUser(email: string, password: string, name: string): Promise<User> {
+  async createEmailAccount(
+    email: string,
+    passwordHash: string,
+    name: string,
+  ): Promise<User> {
     return this.prisma.user.create({
-      data: { email, password, name },
+      data: {
+        email,
+        name,
+        passwordHash,
+      },
     });
   }
 
   markEmailAsVerified(email: string): Promise<User> {
     return this.prisma.user.update({
       where: { email },
-      data: { emailVerified: new Date() },
+      data: { emailVerifiedAt: new Date() },
     });
   }
 }
