@@ -1,9 +1,7 @@
 import {
   Body,
   Controller,
-  Get,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -16,7 +14,6 @@ import { MakeBookingDto, BookingDto } from './dtos/make-booking.dto';
 import { UsersService } from '../users/users.service';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
-import { PricesFilterDto, PricesResponseDto } from './dtos/prices-filter.dto';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -46,20 +43,5 @@ export class BookingsController {
     }
 
     return await this.bookingsService.makeBooking(data, user.id);
-  }
-
-  @Get('/prices')
-  @UseGuards(JwtAuthGuard)
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully fetched prices',
-    type: PricesResponseDto,
-  })
-  @ApiValidationResponse()
-  @ApiJwtUnauthorizedResponse()
-  async getPrices(
-    @Query() filter: PricesFilterDto,
-  ): Promise<PricesResponseDto> {
-    return this.bookingsService.getPrices(filter);
   }
 }

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsISO8601, IsOptional } from 'class-validator';
 
-export class PricesFilterDto {
+export class FreeSlotsFilterDto {
   @ApiProperty({ description: 'Start time for the time slot range' })
   @IsISO8601({ strict: false })
   from: string;
@@ -19,7 +19,7 @@ export class PricesFilterDto {
   studioIds?: string[];
 }
 
-export class PricedTimeSlotDto {
+export class FreeSlotDto {
   @ApiProperty()
   startTime: Date;
   @ApiProperty()
@@ -30,7 +30,7 @@ export class PricedTimeSlotDto {
   studioId: string;
 }
 
-export class PricesResponseDto {
-  @ApiProperty({ type: () => [PricedTimeSlotDto] })
-  prices: PricedTimeSlotDto[];
+export class FreeSlotsResponseDto {
+  @ApiProperty({ type: () => [FreeSlotDto] })
+  freeSlots: FreeSlotDto[];
 }

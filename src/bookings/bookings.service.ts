@@ -7,15 +7,14 @@ import {
 } from './dtos/make-booking.dto';
 import { PrismaService } from '../prisma.service';
 import { ValidationException } from '../common/validation-exception';
-import {
-  PricedTimeSlotDto,
-  PricesFilterDto,
-  PricesResponseDto,
-} from './dtos/prices-filter.dto';
+import { PricesService } from '../common/prices.service';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private pricesService: PricesService,
+  ) {}
 
   async makeBooking(
     data: MakeBookingDto,
@@ -86,7 +85,11 @@ export class BookingsService {
         throw ValidationException.format('slots', 'Studio not found');
       }
 
-      const price = this.calculatePrice(slot.startTime, slot.endTime, studio);
+      const price = this.pricesService.calculatePrice(
+        slot.startTime,
+        slot.endTime,
+        studio,
+      );
       return {
         startTime: slot.startTime,
         endTime: slot.endTime,
@@ -145,199 +148,5 @@ export class BookingsService {
         );
       }
     }
-  }
-
-  private async getPricesForStudio(
-    from: Date,
-    to: Date,
-    studioId: string,
-  ): Promise<PricedTimeSlotDto[]> {
-    const studio = await this.prisma.studio.findUnique({
-      where: { id: studioId },
-    });
-
-    if (!studio) {
-      throw ValidationException.format('studioId', 'Studio not found');
-    }
-
-    // Step 1: Fetch busy time slots
-    const busyTimeSlots = await this.fetchBusyTimeSlots(studioId, from, to);
-
-    // Step 2: Calculate free time slots in 1-hour intervals
-    return this.calculateFreeTimeSlots(busyTimeSlots, from, to, studio);
-  }
-
-  async getPrices(data: PricesFilterDto): Promise<PricesResponseDto> {
-    const { from, to, studioIds } = data;
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-
-    // Fetch only the required studios
-    const studios = await this.prisma.studio.findMany({
-      where: studioIds ? { id: { in: studioIds } } : undefined,
-    });
-
-    if (studioIds && studios.length !== studioIds.length) {
-      const missingStudioIds = studioIds.filter(
-        (id) => !studios.some((studio) => studio.id === id),
-      );
-      throw ValidationException.format(
-        'studioIds',
-        `One or more studios do not exist: ${missingStudioIds.join(', ')}`,
-      );
-    }
-
-    // Fetch prices for all fetched studios
-    const prices = await Promise.all(
-      studios.map((studio) =>
-        this.getPricesForStudio(fromDate, toDate, studio.id),
-      ),
-    );
-
-    return {
-      prices: prices.flat(),
-    };
-  }
-
-  /**
-   * Fetches all busy time slots for a studio within a given range.
-   */
-  private async fetchBusyTimeSlots(studioId: string, from: Date, to: Date) {
-    return this.prisma.timeSlot.findMany({
-      where: {
-        studioId: studioId,
-        OR: [
-          { startTime: { gte: from, lt: to } }, // Slot starts within the range
-          { endTime: { gt: from, lte: to } }, // Slot ends within the range
-          { startTime: { lte: from }, endTime: { gte: to } }, // Slot completely overlaps the range
-        ],
-      },
-      select: {
-        startTime: true,
-        endTime: true,
-      },
-      orderBy: {
-        startTime: 'asc',
-      },
-    });
-  }
-
-  /**
-   * Calculates free time slots in 1-hour intervals, avoiding busy slots.
-   */
-  private calculateFreeTimeSlots(
-    busyTimeSlots: { startTime: Date; endTime: Date }[],
-    from: Date,
-    to: Date,
-    studio: Studio,
-  ): PricedTimeSlotDto[] {
-    const freeTimeSlots: PricedTimeSlotDto[] = [];
-    let currentTime = from;
-
-    for (const busySlot of busyTimeSlots) {
-      // Add free slots before the busy slot
-      this.addFreeSlotsBeforeBusySlot(
-        currentTime,
-        busySlot.startTime,
-        to,
-        studio,
-        freeTimeSlots,
-      );
-      // Move currentTime to the end of the busy slot
-      currentTime = busySlot.endTime;
-    }
-
-    // Add free slots after the last busy slot
-    this.addFreeSlotsAfterLastBusySlot(currentTime, to, studio, freeTimeSlots);
-
-    return freeTimeSlots;
-  }
-
-  /**
-   * Adds free time slots in 1-hour intervals before a busy slot.
-   */
-  private addFreeSlotsBeforeBusySlot(
-    currentTime: Date,
-    busyStartTime: Date,
-    rangeEnd: Date,
-    studio: Studio,
-    freeTimeSlots: PricedTimeSlotDto[],
-  ) {
-    while (currentTime < busyStartTime) {
-      const slotEndTime = new Date(currentTime.getTime() + 60 * 60 * 1000); // Add 1 hour
-      if (slotEndTime > busyStartTime) {
-        // Adjust end time if it overlaps with the busy slot
-        slotEndTime.setTime(busyStartTime.getTime());
-      }
-      if (slotEndTime <= rangeEnd) {
-        freeTimeSlots.push(
-          this.createPricedTimeSlot(
-            currentTime.toISOString(),
-            slotEndTime.toISOString(),
-            studio,
-          ),
-        );
-      }
-      currentTime = slotEndTime; // Move to the next hour
-    }
-  }
-
-  /**
-   * Adds free time slots in 1-hour intervals after the last busy slot.
-   */
-  private addFreeSlotsAfterLastBusySlot(
-    currentTime: Date,
-    rangeEnd: Date,
-    studio: Studio,
-    freeTimeSlots: PricedTimeSlotDto[],
-  ) {
-    while (currentTime < rangeEnd) {
-      const slotEndTime = new Date(currentTime.getTime() + 60 * 60 * 1000); // Add 1 hour
-      if (slotEndTime > rangeEnd) {
-        // Adjust end time if it exceeds the range
-        slotEndTime.setTime(rangeEnd.getTime());
-      }
-      freeTimeSlots.push(
-        this.createPricedTimeSlot(
-          currentTime.toISOString(),
-          slotEndTime.toISOString(),
-          studio,
-        ),
-      );
-      currentTime = slotEndTime; // Move to the next hour
-    }
-  }
-
-  /**
-   * Creates a PricedTimeSlotDto object.
-   */
-  private createPricedTimeSlot(
-    startTime: string,
-    endTime: string,
-    studio: Studio,
-  ): PricedTimeSlotDto {
-    return {
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
-      price: this.calculatePrice(startTime, endTime, studio),
-      studioId: studio.id,
-    };
-  }
-
-  private calculatePrice(
-    startTime: string,
-    endTime: string,
-    studio: Studio,
-  ): number {
-    const durationInHours =
-      (new Date(endTime).getTime() - new Date(startTime).getTime()) /
-      1000 /
-      60 /
-      60;
-    return durationInHours * this.getHourlyRate(studio).toNumber();
-  }
-
-  private getHourlyRate(studio: Studio): Prisma.Decimal {
-    return studio.hourlyRate;
   }
 }

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma.service';
 import { BookingsService } from './bookings.service';
 import { ValidationException } from '../common/validation-exception';
 import { Prisma, Studio, TimeSlot } from '@prisma/client';
+import { PricesService } from '../common/prices.service';
 
 describe('BookingsService', () => {
   let service: BookingsService;
@@ -34,6 +35,7 @@ describe('BookingsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BookingsService,
+        PricesService,
         {
           provide: PrismaService,
           useValue: {
@@ -236,147 +238,6 @@ describe('BookingsService', () => {
       await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
         ValidationException,
       );
-    });
-  });
-
-  describe('getPrices', () => {
-    it('should return all hours as free when no busy slots', async () => {
-      (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getPrices({
-        from: new Date('2023-01-01T10:00:00Z').toISOString(),
-        to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        studioIds: ['studio-1'],
-      });
-
-      expect(result.prices).toHaveLength(4);
-      expect(result.prices[0].price).toEqual(50); // Hourly rate
-    });
-
-    it('should split free slots around busy slots', async () => {
-      (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
-        {
-          startTime: new Date('2023-01-01T11:00:00Z'),
-          endTime: new Date('2023-01-01T13:00:00Z'),
-        },
-      ]);
-
-      const result = await service.getPrices({
-        from: new Date('2023-01-01T10:00:00Z').toISOString(),
-        to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        studioIds: ['studio-1'],
-      });
-
-      expect(result.prices).toHaveLength(2);
-      expect(result.prices[0].endTime).toEqual(
-        new Date('2023-01-01T11:00:00Z'),
-      );
-      expect(result.prices[1].startTime).toEqual(
-        new Date('2023-01-01T13:00:00Z'),
-      );
-    });
-
-    it('should handle partial hours at the end', async () => {
-      (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getPrices({
-        from: new Date('2023-01-01T13:30:00Z').toISOString(),
-        to: new Date('2023-01-01T15:15:00Z').toISOString(),
-        studioIds: ['studio-1'],
-      });
-
-      expect(result.prices).toHaveLength(2);
-      expect(result.prices[0].endTime).toEqual(
-        new Date('2023-01-01T14:30:00Z'),
-      );
-      expect(result.prices[1].endTime).toEqual(
-        new Date('2023-01-01T15:15:00Z'),
-      );
-    });
-
-    it('should handle busy slots at range edges', async () => {
-      (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
-        {
-          startTime: new Date('2023-01-01T10:00:00Z'),
-          endTime: new Date('2023-01-01T14:00:00Z'),
-        },
-      ]);
-
-      const result = await service.getPrices({
-        from: new Date('2023-01-01T10:00:00Z').toISOString(),
-        to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        studioIds: ['studio-1'],
-      });
-
-      expect(result.prices).toHaveLength(0);
-    });
-  });
-
-  describe('getPrices - Free Slot Calculation', () => {
-    beforeEach(() => {
-      (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-    });
-
-    it('should return all hours as free when no busy slots', async () => {
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await service.getPrices({
-        from: new Date('2023-01-01T10:00:00Z').toISOString(),
-        to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        studioIds: ['studio-1'],
-      });
-
-      expect(result.prices).toHaveLength(4); // 10-11, 11-12, 12-13, 13-14
-    });
-
-    it('should handle busy slots at the edges', async () => {
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
-        {
-          startTime: new Date('2023-01-01T10:00:00Z'),
-          endTime: new Date('2023-01-01T14:00:00Z'),
-        },
-      ]);
-
-      const result = await service.getPrices({
-        from: new Date('2023-01-01T10:00:00Z').toISOString(),
-        to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        studioIds: ['studio-1'],
-      });
-
-      expect(result.prices).toHaveLength(0); // Entire range is busy
-    });
-  });
-
-  describe('price calculation', () => {
-    it('should calculate price based on duration and hourly rate', () => {
-      const start = new Date('2023-01-01T10:00:00Z').toISOString();
-      const end = new Date('2023-01-01T12:30:00Z').toISOString(); // 2.5 hours
-      const price = service['calculatePrice'](start, end, mockStudio);
-      expect(price).toEqual(125); // 2.5 * 50
-    });
-
-    it('should handle decimal hourly rates', () => {
-      const studioWithDecimalRate = {
-        ...mockStudio,
-        hourlyRate: new Prisma.Decimal(75.5),
-      };
-      const start = new Date('2023-01-01T10:00:00Z').toISOString();
-      const end = new Date('2023-01-01T12:00:00Z').toISOString(); // 2 hours
-      const price = service['calculatePrice'](
-        start,
-        end,
-        studioWithDecimalRate,
-      );
-      expect(price).toEqual(151); // 2 * 75.5
     });
   });
 
