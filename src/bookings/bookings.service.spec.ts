@@ -4,33 +4,52 @@ import { BookingsService } from './bookings.service';
 import { ValidationException } from '../common/validation-exception';
 import { Prisma, Studio, TimeSlot } from '@prisma/client';
 import { PricesService } from '../common/prices.service';
+import { MakeTimeSlotDto } from './dtos/make-booking.dto';
 
 describe('BookingsService', () => {
   let service: BookingsService;
   let prisma: PrismaService;
-
-  const mockStudio: Studio = {
-    id: 'studio-1',
-    hourlyRate: new Prisma.Decimal(50),
-  };
-
-  // From 10:00 to 12:00
-  const mockTimeSlots: TimeSlot[] = [
-    {
-      id: 1,
-      startTime: new Date('2023-01-01T10:00:00Z'),
-      endTime: new Date('2023-01-01T12:00:00Z'),
-      studioId: 'studio-1',
-      price: new Prisma.Decimal(100),
-      peopleCount: 2,
-      bookingId: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
-
   const mockUserId = 'user-1';
 
+  // Test data factories
+  const createMockStudio = (id = 'studio-1', hourlyRate = 50): Studio => ({
+    id,
+    hourlyRate: new Prisma.Decimal(hourlyRate),
+  });
+
+  const createMockTimeSlot = (
+    startTime = '2023-01-01T10:00:00Z',
+    endTime = '2023-01-01T12:00:00Z',
+    studioId = 'studio-1',
+  ): TimeSlot => ({
+    id: 1,
+    startTime: new Date(startTime),
+    endTime: new Date(endTime),
+    studioId,
+    price: new Prisma.Decimal(100),
+    peopleCount: 2,
+    bookingId: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  const createBookingData = (
+    studioId = 'studio-1',
+    startTime = '2023-01-01T13:00:00Z',
+    endTime = '2023-01-01T15:00:00Z',
+    peopleCount = 2,
+  ) => ({
+    slots: [
+      {
+        studio: studioId,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+        peopleCount,
+      },
+    ],
+  });
+
+  // Common test setup
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,178 +81,209 @@ describe('BookingsService', () => {
     jest.clearAllMocks();
   });
 
+  // Helper functions to set up common testing scenarios
+  const setupValidStudio = () => {
+    (prisma.studio.findMany as jest.Mock).mockResolvedValue([
+      createMockStudio(),
+    ]);
+  };
+
+  const setupNoExistingTimeSlots = () => {
+    (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
+  };
+
+  const setupSuccessfulBookingCreation = () => {
+    const timeSlot = createMockTimeSlot();
+    (prisma.booking.create as jest.Mock).mockResolvedValue({
+      id: 1,
+      timeSlots: [timeSlot],
+    });
+  };
+
   describe('makeBooking', () => {
-    it('should throw if studio does not exist', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([]);
+    describe('Studio validation', () => {
+      it('should throw when studio does not exist', async () => {
+        // Empty array means no studios were found
+        (prisma.studio.findMany as jest.Mock).mockResolvedValue([]);
+        const data = createBookingData('non-existent-studio');
 
-      const data = {
-        slots: [
-          {
-            studio: 'non-existent-studio',
-            startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
-            endTime: new Date('2023-01-01T12:00:00Z').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
-        ValidationException,
-      );
+        await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
+          ValidationException,
+        );
+      });
     });
 
-    it('should throw if time slot overlaps with existing booking', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue(mockTimeSlots);
-
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T11:00:00Z').toISOString(), // Overlaps with existing slot
-            endTime: new Date('2023-01-01T13:00:00Z').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
-        ValidationException,
-      );
-    });
-
-    it('should create booking with correct prices when no overlaps', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.booking.create as jest.Mock).mockResolvedValue({
-        id: 1,
-        timeSlots: mockTimeSlots,
+    describe('Time slot validation', () => {
+      beforeEach(() => {
+        setupValidStudio();
       });
 
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T13:00:00Z').toISOString(),
-            endTime: new Date('2023-01-01T15:00:00Z').toISOString(), // 2 hours
-            peopleCount: 2,
-          },
-        ],
-      };
+      it('should throw when endTime is before startTime', async () => {
+        setupNoExistingTimeSlots();
+        const data = createBookingData(
+          'studio-1',
+          '2023-01-01T12:00:00Z',
+          '2023-01-01T10:00:00Z', // end before start
+        );
+
+        await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
+          ValidationException,
+        );
+      });
+
+      it('should throw when endTime equals startTime', async () => {
+        setupNoExistingTimeSlots();
+        const data = createBookingData(
+          'studio-1',
+          '2023-01-01T10:00:00Z',
+          '2023-01-01T10:00:00Z', // same time
+        );
+
+        await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
+          ValidationException,
+        );
+      });
+    });
+
+    describe('Overlapping time slots', () => {
+      beforeEach(() => {
+        setupValidStudio();
+      });
+
+      it('should throw when new slot starts during existing slot', async () => {
+        // Existing slot from 10:00 to 12:00
+        (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
+          createMockTimeSlot('2023-01-01T10:00:00Z', '2023-01-01T12:00:00Z'),
+        ]);
+
+        // New slot from 11:00 to 13:00 (overlaps)
+        const data = createBookingData(
+          'studio-1',
+          '2023-01-01T11:00:00Z',
+          '2023-01-01T13:00:00Z',
+        );
+
+        await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
+          ValidationException,
+        );
+      });
+
+      it('should throw when new slot is completely contained within existing slot', async () => {
+        // Existing slot from 10:00 to 14:00
+        (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
+          createMockTimeSlot('2023-01-01T10:00:00Z', '2023-01-01T14:00:00Z'),
+        ]);
+
+        // New slot from 11:00 to 13:00 (contained within)
+        const data = createBookingData(
+          'studio-1',
+          '2023-01-01T11:00:00Z',
+          '2023-01-01T13:00:00Z',
+        );
+
+        await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
+          ValidationException,
+        );
+      });
+    });
+
+    describe('Successful booking creation', () => {
+      beforeEach(() => {
+        setupValidStudio();
+        setupNoExistingTimeSlots();
+      });
+
+      it('should create booking with correct prices when no overlaps', async () => {
+        setupSuccessfulBookingCreation();
+
+        const data = createBookingData();
+        const result = await service.makeBooking(data, mockUserId);
+
+        expect(result.timeSlots[0].price).toEqual(new Prisma.Decimal(100));
+      });
+    });
+  });
+
+  describe('Multiple slots booking', () => {
+    const createMultiSlotBooking = (slots: MakeTimeSlotDto[]) => ({
+      slots,
+    });
+
+    it('should allow multiple slots for the same studio', async () => {
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([
+        createMockStudio('studio-1', 500),
+      ]);
+      setupNoExistingTimeSlots();
+      setupSuccessfulBookingCreation();
+
+      const data = createMultiSlotBooking([
+        {
+          studio: 'studio-1',
+          startTime: new Date('2023-01-01T10:00:00').toISOString(),
+          endTime: new Date('2023-01-01T12:00:00').toISOString(),
+          peopleCount: 2,
+        },
+        {
+          studio: 'studio-1',
+          startTime: new Date('2023-01-01T13:00:00').toISOString(),
+          endTime: new Date('2023-01-01T14:00:00').toISOString(),
+          peopleCount: 2,
+        },
+      ]);
 
       const result = await service.makeBooking(data, mockUserId);
-      expect(result.timeSlots[0].price).toEqual(new Prisma.Decimal(100)); // 2 hours * 50/hour
-    });
-  });
-
-  describe('makeBooking - Time Slot Validation', () => {
-    it('should throw if endTime is before startTime', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T12:00:00Z').toISOString(),
-            endTime: new Date('2023-01-01T10:00:00Z').toISOString(), // Invalid
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
-        ValidationException,
-      );
+      expect(result).toBeDefined();
     });
 
-    it('should throw if endTime equals startTime', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
-            endTime: new Date('2023-01-01T10:00:00Z').toISOString(), // Invalid
-            peopleCount: 2,
-          },
-        ],
-      };
+    it('should allow multiple slots for different studios', async () => {
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([
+        createMockStudio('studio-1', 500),
+        createMockStudio('studio-2', 600),
+      ]);
+      setupNoExistingTimeSlots();
+      (prisma.booking.create as jest.Mock).mockResolvedValue({
+        id: 1,
+        timeSlots: [],
+      });
 
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
-        ValidationException,
-      );
-    });
-  });
-
-  describe('makeBooking - Overlap Scenarios', () => {
-    beforeEach(() => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
-    });
-
-    it('should throw if new slot starts during existing slot', async () => {
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
+      const data = createMultiSlotBooking([
         {
-          startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
-          endTime: new Date('2023-01-01T12:00:00Z').toISOString(),
+          studio: 'studio-1',
+          startTime: new Date('2023-01-01T10:00:00').toISOString(),
+          endTime: new Date('2023-01-01T12:00:00').toISOString(),
+          peopleCount: 2,
+        },
+        {
+          studio: 'studio-2',
+          startTime: new Date('2023-01-01T13:00:00').toISOString(),
+          endTime: new Date('2023-01-01T14:00:00').toISOString(),
+          peopleCount: 2,
         },
       ]);
 
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T11:00:00Z').toISOString(), // Starts during existing slot
-            endTime: new Date('2023-01-01T13:00:00Z').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
-        ValidationException,
-      );
+      const result = await service.makeBooking(data, mockUserId);
+      expect(result).toBeDefined();
     });
 
-    it('should throw if new slot is completely contained within existing slot', async () => {
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
-        {
-          startTime: new Date('2023-01-01T10:00:00Z'),
-          endTime: new Date('2023-01-01T14:00:00Z'),
-        },
+    it('should throw if one or more studios do not exist', async () => {
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([
+        createMockStudio('studio-1'),
       ]);
 
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T11:00:00Z').toISOString(), // Contained within existing slot
-            endTime: new Date('2023-01-01T13:00:00Z').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
-        ValidationException,
-      );
-    });
-  });
-
-  describe('makeBooking - Studio Validation', () => {
-    it('should throw if studio does not exist', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([]);
-
-      const data = {
-        slots: [
-          {
-            studio: 'non-existent-studio',
-            startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
-            endTime: new Date('2023-01-01T12:00:00Z').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
+      const data = createMultiSlotBooking([
+        {
+          studio: 'studio-1',
+          startTime: new Date('2023-01-01T10:00:00').toISOString(),
+          endTime: new Date('2023-01-01T12:00:00').toISOString(),
+          peopleCount: 2,
+        },
+        {
+          studio: 'studio-2', // This studio doesn't exist
+          startTime: new Date('2023-01-01T13:00:00').toISOString(),
+          endTime: new Date('2023-01-01T14:00:00').toISOString(),
+          peopleCount: 2,
+        },
+      ]);
 
       await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
         ValidationException,
@@ -244,7 +294,7 @@ describe('BookingsService', () => {
   describe('validateStudios', () => {
     it('should pass validation for single studio with multiple slots', async () => {
       const studioIds = ['studio-1', 'studio-1']; // Duplicate studio IDs
-      const mockStudios = [{ id: 'studio-1' }];
+      const mockStudios = [createMockStudio('studio-1')];
 
       (prisma.studio.findMany as jest.Mock).mockResolvedValue(mockStudios);
 
@@ -254,7 +304,10 @@ describe('BookingsService', () => {
 
     it('should pass validation for multiple unique studios', async () => {
       const studioIds = ['studio-1', 'studio-2'];
-      const mockStudios = [{ id: 'studio-1' }, { id: 'studio-2' }];
+      const mockStudios = [
+        createMockStudio('studio-1'),
+        createMockStudio('studio-2'),
+      ];
 
       (prisma.studio.findMany as jest.Mock).mockResolvedValue(mockStudios);
 
@@ -264,100 +317,11 @@ describe('BookingsService', () => {
 
     it('should throw if one or more studios do not exist', async () => {
       const studioIds = ['studio-1', 'studio-2'];
-      const mockStudios = [{ id: 'studio-1' }]; // studio-2 is missing
+      const mockStudios = [createMockStudio('studio-1')]; // studio-2 is missing
 
       (prisma.studio.findMany as jest.Mock).mockResolvedValue(mockStudios);
 
       await expect(service['validateStudios'](studioIds)).rejects.toThrow(
-        ValidationException,
-      );
-    });
-  });
-
-  describe('makeBooking, multiple slots', () => {
-    beforeEach(() => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([
-        { id: 'studio-1', hourlyRate: new Prisma.Decimal(500.0) },
-      ]);
-      (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.booking.create as jest.Mock).mockResolvedValue({
-        id: 1,
-        timeSlots: [],
-      });
-    });
-
-    it('should allow multiple slots for the same studio', async () => {
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00').toISOString(),
-            endTime: new Date('2023-01-01T12:00:00').toISOString(),
-            peopleCount: 2,
-          },
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T13:00:00').toISOString(),
-            endTime: new Date('2023-01-01T14:00:00').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      const result = await service.makeBooking(data, mockUserId);
-      expect(result).toBeDefined();
-    });
-
-    it('should allow multiple slots for different studios', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([
-        { id: 'studio-1', hourlyRate: new Prisma.Decimal(500.0) },
-        { id: 'studio-2', hourlyRate: new Prisma.Decimal(600.0) },
-      ]);
-
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00').toISOString(),
-            endTime: new Date('2023-01-01T12:00:00').toISOString(),
-            peopleCount: 2,
-          },
-          {
-            studio: 'studio-2',
-            startTime: new Date('2023-01-01T13:00:00').toISOString(),
-            endTime: new Date('2023-01-01T14:00:00').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      const result = await service.makeBooking(data, mockUserId);
-      expect(result).toBeDefined();
-    });
-
-    it('should throw if one or more studios do not exist', async () => {
-      (prisma.studio.findMany as jest.Mock).mockResolvedValue([
-        { id: 'studio-1' },
-      ]);
-
-      const data = {
-        slots: [
-          {
-            studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00').toISOString(),
-            endTime: new Date('2023-01-01T12:00:00').toISOString(),
-            peopleCount: 2,
-          },
-          {
-            studio: 'studio-2', // This studio doesn't exist
-            startTime: new Date('2023-01-01T13:00:00').toISOString(),
-            endTime: new Date('2023-01-01T14:00:00').toISOString(),
-            peopleCount: 2,
-          },
-        ],
-      };
-
-      await expect(service.makeBooking(data, mockUserId)).rejects.toThrow(
         ValidationException,
       );
     });
