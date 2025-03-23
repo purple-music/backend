@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Param,
   Post,
   Query,
   Req,
@@ -17,7 +16,7 @@ import { MakeBookingDto, BookingDto } from './dtos/make-booking.dto';
 import { UsersService } from '../users/users.service';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
-import { GetPricesDto, PricesStudioResponseDto } from './dtos/get-prices.dto';
+import { PricesFilterDto, PricesResponseDto } from './dtos/prices-filter.dto';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -49,32 +48,18 @@ export class BookingsController {
     return await this.bookingsService.makeBooking(data, user.id);
   }
 
-  @Get('/prices/:studioId')
-  @UseGuards(JwtAuthGuard)
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully fetched prices',
-    type: PricesStudioResponseDto,
-  })
-  @ApiValidationResponse()
-  @ApiJwtUnauthorizedResponse()
-  async getPrices(
-    @Query() filter: GetPricesDto,
-    @Param('studioId') studioId: string,
-  ) {
-    return await this.bookingsService.getPrices(filter, studioId);
-  }
-
   @Get('/prices')
   @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
-    description: 'Prices for all studios',
-    type: [PricesStudioResponseDto],
+    description: 'Successfully fetched prices',
+    type: PricesResponseDto,
   })
   @ApiValidationResponse()
   @ApiJwtUnauthorizedResponse()
-  async getAllPrices(@Query() filter: GetPricesDto) {
-    return await this.bookingsService.getAllPrices(filter);
+  async getPrices(
+    @Query() filter: PricesFilterDto,
+  ): Promise<PricesResponseDto> {
+    return this.bookingsService.getPrices(filter);
   }
 }

@@ -8,10 +8,10 @@ import {
 import { PrismaService } from '../prisma.service';
 import { ValidationException } from '../common/validation-exception';
 import {
-  GetPricesDto,
   PricedTimeSlotDto,
-  PricesStudioResponseDto,
-} from './dtos/get-prices.dto';
+  PricesFilterDto,
+  PricesResponseDto,
+} from './dtos/prices-filter.dto';
 
 @Injectable()
 export class BookingsService {
@@ -147,17 +147,13 @@ export class BookingsService {
     }
   }
 
-  async getPrices(
-    data: GetPricesDto,
+  private async getPricesForStudio(
+    from: Date,
+    to: Date,
     studioId: string,
-  ): Promise<PricesStudioResponseDto> {
-    const from = new Date(data.from);
-    const to = new Date(data.to);
-
+  ): Promise<PricedTimeSlotDto[]> {
     const studio = await this.prisma.studio.findUnique({
-      where: {
-        id: studioId,
-      },
+      where: { id: studioId },
     });
 
     if (!studio) {
@@ -168,26 +164,39 @@ export class BookingsService {
     const busyTimeSlots = await this.fetchBusyTimeSlots(studioId, from, to);
 
     // Step 2: Calculate free time slots in 1-hour intervals
-    const freeTimeSlots = this.calculateFreeTimeSlots(
-      busyTimeSlots,
-      from,
-      to,
-      studio,
-    );
-
-    // Step 3: Return the free time slots
-    return {
-      prices: freeTimeSlots,
-      studioId: studioId,
-    };
+    return this.calculateFreeTimeSlots(busyTimeSlots, from, to, studio);
   }
 
-  async getAllPrices(data: GetPricesDto): Promise<PricesStudioResponseDto[]> {
-    return Promise.all(
-      (await this.prisma.studio.findMany()).map((studio) =>
-        this.getPrices(data, studio.id),
+  async getPrices(data: PricesFilterDto): Promise<PricesResponseDto> {
+    const { from, to, studioIds } = data;
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    // Fetch only the required studios
+    const studios = await this.prisma.studio.findMany({
+      where: studioIds ? { id: { in: studioIds } } : undefined,
+    });
+
+    if (studioIds && studios.length !== studioIds.length) {
+      const missingStudioIds = studioIds.filter(
+        (id) => !studios.some((studio) => studio.id === id),
+      );
+      throw ValidationException.format(
+        'studioIds',
+        `One or more studios do not exist: ${missingStudioIds.join(', ')}`,
+      );
+    }
+
+    // Fetch prices for all fetched studios
+    const prices = await Promise.all(
+      studios.map((studio) =>
+        this.getPricesForStudio(fromDate, toDate, studio.id),
       ),
     );
+
+    return {
+      prices: prices.flat(),
+    };
   }
 
   /**

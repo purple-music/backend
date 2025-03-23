@@ -68,8 +68,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'non-existent-studio',
-            startTime: new Date('2023-01-01T10:00:00Z'),
-            endTime: new Date('2023-01-01T12:00:00Z'),
+            startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
+            endTime: new Date('2023-01-01T12:00:00Z').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -88,8 +88,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T11:00:00Z'), // Overlaps with existing slot
-            endTime: new Date('2023-01-01T13:00:00Z'),
+            startTime: new Date('2023-01-01T11:00:00Z').toISOString(), // Overlaps with existing slot
+            endTime: new Date('2023-01-01T13:00:00Z').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -112,8 +112,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T13:00:00Z'),
-            endTime: new Date('2023-01-01T15:00:00Z'), // 2 hours
+            startTime: new Date('2023-01-01T13:00:00Z').toISOString(),
+            endTime: new Date('2023-01-01T15:00:00Z').toISOString(), // 2 hours
             peopleCount: 2,
           },
         ],
@@ -132,8 +132,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T12:00:00Z'),
-            endTime: new Date('2023-01-01T10:00:00Z'), // Invalid
+            startTime: new Date('2023-01-01T12:00:00Z').toISOString(),
+            endTime: new Date('2023-01-01T10:00:00Z').toISOString(), // Invalid
             peopleCount: 2,
           },
         ],
@@ -151,8 +151,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00Z'),
-            endTime: new Date('2023-01-01T10:00:00Z'), // Invalid
+            startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
+            endTime: new Date('2023-01-01T10:00:00Z').toISOString(), // Invalid
             peopleCount: 2,
           },
         ],
@@ -172,8 +172,8 @@ describe('BookingsService', () => {
     it('should throw if new slot starts during existing slot', async () => {
       (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
         {
-          startTime: new Date('2023-01-01T10:00:00Z'),
-          endTime: new Date('2023-01-01T12:00:00Z'),
+          startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
+          endTime: new Date('2023-01-01T12:00:00Z').toISOString(),
         },
       ]);
 
@@ -181,8 +181,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T11:00:00Z'), // Starts during existing slot
-            endTime: new Date('2023-01-01T13:00:00Z'),
+            startTime: new Date('2023-01-01T11:00:00Z').toISOString(), // Starts during existing slot
+            endTime: new Date('2023-01-01T13:00:00Z').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -205,8 +205,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T11:00:00Z'), // Contained within existing slot
-            endTime: new Date('2023-01-01T13:00:00Z'),
+            startTime: new Date('2023-01-01T11:00:00Z').toISOString(), // Contained within existing slot
+            endTime: new Date('2023-01-01T13:00:00Z').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -226,8 +226,8 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'non-existent-studio',
-            startTime: new Date('2023-01-01T10:00:00Z'),
-            endTime: new Date('2023-01-01T12:00:00Z'),
+            startTime: new Date('2023-01-01T10:00:00Z').toISOString(),
+            endTime: new Date('2023-01-01T12:00:00Z').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -242,15 +242,14 @@ describe('BookingsService', () => {
   describe('getPrices', () => {
     it('should return all hours as free when no busy slots', async () => {
       (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
       (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.getPrices(
-        {
-          from: new Date('2023-01-01T10:00:00Z').toISOString(),
-          to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        },
-        'studio-1',
-      );
+      const result = await service.getPrices({
+        from: new Date('2023-01-01T10:00:00Z').toISOString(),
+        to: new Date('2023-01-01T14:00:00Z').toISOString(),
+        studioIds: ['studio-1'],
+      });
 
       expect(result.prices).toHaveLength(4);
       expect(result.prices[0].price).toEqual(50); // Hourly rate
@@ -258,6 +257,7 @@ describe('BookingsService', () => {
 
     it('should split free slots around busy slots', async () => {
       (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
       (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
         {
           startTime: new Date('2023-01-01T11:00:00Z'),
@@ -265,13 +265,11 @@ describe('BookingsService', () => {
         },
       ]);
 
-      const result = await service.getPrices(
-        {
-          from: new Date('2023-01-01T10:00:00Z').toISOString(),
-          to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        },
-        'studio-1',
-      );
+      const result = await service.getPrices({
+        from: new Date('2023-01-01T10:00:00Z').toISOString(),
+        to: new Date('2023-01-01T14:00:00Z').toISOString(),
+        studioIds: ['studio-1'],
+      });
 
       expect(result.prices).toHaveLength(2);
       expect(result.prices[0].endTime).toEqual(
@@ -284,15 +282,14 @@ describe('BookingsService', () => {
 
     it('should handle partial hours at the end', async () => {
       (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
       (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.getPrices(
-        {
-          from: new Date('2023-01-01T13:30:00Z').toISOString(),
-          to: new Date('2023-01-01T15:15:00Z').toISOString(),
-        },
-        'studio-1',
-      );
+      const result = await service.getPrices({
+        from: new Date('2023-01-01T13:30:00Z').toISOString(),
+        to: new Date('2023-01-01T15:15:00Z').toISOString(),
+        studioIds: ['studio-1'],
+      });
 
       expect(result.prices).toHaveLength(2);
       expect(result.prices[0].endTime).toEqual(
@@ -305,6 +302,7 @@ describe('BookingsService', () => {
 
     it('should handle busy slots at range edges', async () => {
       (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
       (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([
         {
           startTime: new Date('2023-01-01T10:00:00Z'),
@@ -312,13 +310,11 @@ describe('BookingsService', () => {
         },
       ]);
 
-      const result = await service.getPrices(
-        {
-          from: new Date('2023-01-01T10:00:00Z').toISOString(),
-          to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        },
-        'studio-1',
-      );
+      const result = await service.getPrices({
+        from: new Date('2023-01-01T10:00:00Z').toISOString(),
+        to: new Date('2023-01-01T14:00:00Z').toISOString(),
+        studioIds: ['studio-1'],
+      });
 
       expect(result.prices).toHaveLength(0);
     });
@@ -327,18 +323,17 @@ describe('BookingsService', () => {
   describe('getPrices - Free Slot Calculation', () => {
     beforeEach(() => {
       (prisma.studio.findUnique as jest.Mock).mockResolvedValue(mockStudio);
+      (prisma.studio.findMany as jest.Mock).mockResolvedValue([mockStudio]);
     });
 
     it('should return all hours as free when no busy slots', async () => {
       (prisma.timeSlot.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await service.getPrices(
-        {
-          from: new Date('2023-01-01T10:00:00Z').toISOString(),
-          to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        },
-        'studio-1',
-      );
+      const result = await service.getPrices({
+        from: new Date('2023-01-01T10:00:00Z').toISOString(),
+        to: new Date('2023-01-01T14:00:00Z').toISOString(),
+        studioIds: ['studio-1'],
+      });
 
       expect(result.prices).toHaveLength(4); // 10-11, 11-12, 12-13, 13-14
     });
@@ -351,13 +346,11 @@ describe('BookingsService', () => {
         },
       ]);
 
-      const result = await service.getPrices(
-        {
-          from: new Date('2023-01-01T10:00:00Z').toISOString(),
-          to: new Date('2023-01-01T14:00:00Z').toISOString(),
-        },
-        'studio-1',
-      );
+      const result = await service.getPrices({
+        from: new Date('2023-01-01T10:00:00Z').toISOString(),
+        to: new Date('2023-01-01T14:00:00Z').toISOString(),
+        studioIds: ['studio-1'],
+      });
 
       expect(result.prices).toHaveLength(0); // Entire range is busy
     });
@@ -365,8 +358,8 @@ describe('BookingsService', () => {
 
   describe('price calculation', () => {
     it('should calculate price based on duration and hourly rate', () => {
-      const start = new Date('2023-01-01T10:00:00Z');
-      const end = new Date('2023-01-01T12:30:00Z'); // 2.5 hours
+      const start = new Date('2023-01-01T10:00:00Z').toISOString();
+      const end = new Date('2023-01-01T12:30:00Z').toISOString(); // 2.5 hours
       const price = service['calculatePrice'](start, end, mockStudio);
       expect(price).toEqual(125); // 2.5 * 50
     });
@@ -376,8 +369,8 @@ describe('BookingsService', () => {
         ...mockStudio,
         hourlyRate: new Prisma.Decimal(75.5),
       };
-      const start = new Date('2023-01-01T10:00:00Z');
-      const end = new Date('2023-01-01T12:00:00Z'); // 2 hours
+      const start = new Date('2023-01-01T10:00:00Z').toISOString();
+      const end = new Date('2023-01-01T12:00:00Z').toISOString(); // 2 hours
       const price = service['calculatePrice'](
         start,
         end,
@@ -437,14 +430,14 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00'),
-            endTime: new Date('2023-01-01T12:00:00'),
+            startTime: new Date('2023-01-01T10:00:00').toISOString(),
+            endTime: new Date('2023-01-01T12:00:00').toISOString(),
             peopleCount: 2,
           },
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T13:00:00'),
-            endTime: new Date('2023-01-01T14:00:00'),
+            startTime: new Date('2023-01-01T13:00:00').toISOString(),
+            endTime: new Date('2023-01-01T14:00:00').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -464,14 +457,14 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00'),
-            endTime: new Date('2023-01-01T12:00:00'),
+            startTime: new Date('2023-01-01T10:00:00').toISOString(),
+            endTime: new Date('2023-01-01T12:00:00').toISOString(),
             peopleCount: 2,
           },
           {
             studio: 'studio-2',
-            startTime: new Date('2023-01-01T13:00:00'),
-            endTime: new Date('2023-01-01T14:00:00'),
+            startTime: new Date('2023-01-01T13:00:00').toISOString(),
+            endTime: new Date('2023-01-01T14:00:00').toISOString(),
             peopleCount: 2,
           },
         ],
@@ -490,14 +483,14 @@ describe('BookingsService', () => {
         slots: [
           {
             studio: 'studio-1',
-            startTime: new Date('2023-01-01T10:00:00'),
-            endTime: new Date('2023-01-01T12:00:00'),
+            startTime: new Date('2023-01-01T10:00:00').toISOString(),
+            endTime: new Date('2023-01-01T12:00:00').toISOString(),
             peopleCount: 2,
           },
           {
             studio: 'studio-2', // This studio doesn't exist
-            startTime: new Date('2023-01-01T13:00:00'),
-            endTime: new Date('2023-01-01T14:00:00'),
+            startTime: new Date('2023-01-01T13:00:00').toISOString(),
+            endTime: new Date('2023-01-01T14:00:00').toISOString(),
             peopleCount: 2,
           },
         ],

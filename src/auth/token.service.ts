@@ -18,11 +18,11 @@ export class TokenService {
       create: {
         email,
         token: uuid(),
-        expires: expiresAt,
+        expiresAt,
       },
       update: {
         token: uuid(),
-        expires: expiresAt,
+        expiresAt,
       },
     });
   }
@@ -37,11 +37,11 @@ export class TokenService {
       create: {
         email,
         token: uuid(),
-        expires: expiresAt,
+        expiresAt,
       },
       update: {
         token: uuid(),
-        expires: expiresAt,
+        expiresAt,
       },
     });
   }
