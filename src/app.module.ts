@@ -8,6 +8,7 @@ import { TimeSlotsModule } from './time-slots/time-slots.module';
 import { TimeSlotsService } from './time-slots/time-slots.service';
 import { BookingsModule } from './bookings/bookings.module';
 import { FreeSlotsModule } from './free-slots/free-slots.module';
+import { StudiosModule } from './studios/studios.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FreeSlotsModule } from './free-slots/free-slots.module';
     TimeSlotsModule,
     BookingsModule,
     FreeSlotsModule,
+    StudiosModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, TimeSlotsService],
