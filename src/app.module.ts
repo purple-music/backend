@@ -9,6 +9,7 @@ import { TimeSlotsService } from './time-slots/time-slots.service';
 import { BookingsModule } from './bookings/bookings.module';
 import { FreeSlotsModule } from './free-slots/free-slots.module';
 import { StudiosModule } from './studios/studios.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -18,6 +19,10 @@ import { StudiosModule } from './studios/studios.module';
     BookingsModule,
     FreeSlotsModule,
     StudiosModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, TimeSlotsService],

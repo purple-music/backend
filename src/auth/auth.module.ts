@@ -10,6 +10,7 @@ import { TokenService } from './token.service';
 import { PrismaService } from '../prisma.service';
 import { EmailService } from './email.service';
 import { AuthController } from './auth.controller';
+import { YandexStrategy } from './yandex.strategy';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AuthController } from './auth.controller';
     EmailService,
     EmailStrategy,
     JwtStrategy,
+    YandexStrategy,
   ],
   exports: [AuthService],
   controllers: [AuthController],

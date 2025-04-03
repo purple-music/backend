@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpStatus,
+  InternalServerErrorException,
   Post,
   Req,
   Res,
@@ -15,6 +17,7 @@ import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import {
   ApiBody,
   ApiCreatedResponse,
+  ApiExcludeEndpoint,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -36,6 +39,7 @@ import { ResetPasswordResponseDto } from './dtos/reset-password-response.dto';
 import { NewPasswordRequestDto } from './dtos/new-password-request.dto';
 import { NewPasswordResponseDto } from './dtos/new-password-response.dto';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -56,12 +60,12 @@ export class AuthController {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken = this.authService.login({
+    const accessToken = this.authService.generateJwt({
       email: req.user.email,
       id: req.user.id,
     });
 
-    res.cookie('token', accessToken.access_token, {
+    res.cookie('token', accessToken.accessToken, {
       httpOnly: true, // Prevents client-side access
       secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
       sameSite: 'strict', // Prevents CSRF attacks
@@ -80,7 +84,7 @@ export class AuthController {
   @ApiValidationResponse() // 400
   @ApiCreatedResponse({ type: ResetPasswordResponseDto }) // 201
   async resetPassword(@Body() body: ResetPasswordRequestDto) {
-    return this.authService.resetPassword(body.email);
+    return this.authService.requestPasswordReset(body.email);
   }
 
   @Post('new-password')
@@ -89,7 +93,7 @@ export class AuthController {
   @ApiValidationResponse() // 400
   @ApiCreatedResponse({ type: NewPasswordResponseDto }) // 201
   async newPassword(@Body() body: NewPasswordRequestDto) {
-    return this.authService.newPassword(body.token, body.password);
+    return this.authService.resetPassword(body.token, body.password);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -158,5 +162,65 @@ export class AuthController {
   @ApiValidationResponse()
   async verify(@Body() body: VerifyEmailDto) {
     return this.authService.verifyEmailToken(body.token);
+  }
+
+  // @Post('refresh')
+  // @ApiOperation({ summary: 'Refresh access token' })
+  // async refreshToken(@Req() req: Request, @Res() res: Response) {
+  //   const refreshToken = req.cookies['refresh_token'];
+  //   if (!refreshToken) {
+  //     throw new UnauthorizedException('Refresh token missing');
+  //   }
+  //
+  //   const newAccessToken =
+  //     await this.authService.refreshAccessToken(refreshToken);
+  //   res.cookie('access_token', newAccessToken, {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === 'production',
+  //     sameSite: 'strict',
+  //   });
+  //
+  //   return res.json({ access_token: newAccessToken });
+  // }
+
+  @Get('yandex')
+  @UseGuards(AuthGuard('yandex'))
+  @ApiOperation({ summary: 'Initiate Yandex OAuth flow' })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+    description: 'Redirects to Yandex OAuth page',
+  })
+  yandexAuth() {}
+
+  @Get('callback/yandex')
+  @UseGuards(AuthGuard('yandex'))
+  @ApiExcludeEndpoint() // Hide from Swagger as this is a callback URL
+  yandexAuthCallback(@Req() req: Request, @Res() res: Response) {
+    if (!req.user || !req.user.email) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const { accessToken } = this.authService.generateJwt({
+      id: req.user.id,
+      email: req.user.email,
+    });
+
+    // Set tokens in a secure HTTP-only cookie
+    res.cookie('token', accessToken, {
+      httpOnly: true, // Prevents client-side access
+      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+      sameSite: 'lax', // Prevents CSRF attacks
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/', // Accessible across the entire site
+    });
+
+    const redirectUrl = process.env.CLIENT_AUTH_SUCCESS_URL;
+
+    if (!redirectUrl) {
+      throw new InternalServerErrorException(
+        'Missing CLIENT_AUTH_SUCCESS_URL environment variable',
+      );
+    }
+
+    return res.redirect(redirectUrl);
   }
 }

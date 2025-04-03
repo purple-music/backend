@@ -7,28 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AccountType {
-  OAUTH
-  GUEST
-}
+model AuthAccount {
+  id String @id @default(cuid())
 
-model Account {
-  id                String      @id @default(cuid())
-  userId            String
-  type              AccountType
   provider          String // "google", "telegram", etc.
   providerAccountId String // Unique ID from the provider
 
-  // Only for OAuth
-  refresh_token String? @db.Text
-  access_token  String? @db.Text
-  expires_at    Int?
-  token_type    String?
-  scope         String?
-  id_token      String? @db.Text
-  session_state String? @db.Text
+  // accessToken  String? @db.Text
+  // refreshToken String? @db.Text
+  // expiresAt    Int?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   @@unique([provider, providerAccountId])
 }
@@ -38,11 +28,17 @@ enum UserRole {
   USER
 }
 
+// NOTE: there can be three types of users in the SaaS:
+// - OAuth
+//   - These accounts are created when a user logs in with a third-party provider, uses Account record
+// - Credentials
+//   - These are used when a user logs in with email and password. No Account record is created, just a User record.
+//   - In the future we might support phone number login (using a temporary code sent to the user)
 model User {
   id              String    @id @default(cuid())
   name            String?
   email           String?   @unique
-  emailVerifiedAt DateTime?
+  emailVerifiedAt DateTime? // If null, email is not verified
   image           String?
   passwordHash    String?
   role            UserRole  @default(USER)
@@ -50,7 +46,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts Account[]
+  accounts AuthAccount[]
   bookings Booking[]
 }
 
@@ -96,8 +92,7 @@ model Booking {
   timeSlots TimeSlot[]
 }
 
-// TODO: rename to "EmailVerificationToken"
-model VerificationToken {
+model EmailVerificationToken {
   id        String   @id @default(cuid())
   email     String   @unique
   token     String   @unique
