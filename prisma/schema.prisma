@@ -7,21 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String  @map("user_id")
-  type              String
-  provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+model AuthAccount {
+  id String @id @default(cuid())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String // "google", "telegram", etc.
+  providerAccountId String // Unique ID from the provider
+
+  // accessToken  String? @db.Text
+  // refreshToken String? @db.Text
+  // expiresAt    Int?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   @@unique([provider, providerAccountId])
 }
@@ -31,26 +28,39 @@ enum UserRole {
   USER
 }
 
+// NOTE: there can be three types of users in the SaaS:
+// - OAuth
+//   - These accounts are created when a user logs in with a third-party provider, uses Account record
+// - Credentials
+//   - These are used when a user logs in with email and password. No Account record is created, just a User record.
+//   - In the future we might support phone number login (using a temporary code sent to the user)
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime? @map("email_verified")
-  image         String?
-  password      String?
-  role          UserRole  @default(USER)
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerifiedAt DateTime? // If null, email is not verified
+  image           String?
+  passwordHash    String?
+  role            UserRole  @default(USER)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts Account[]
-  orders   Order[]
+  accounts AuthAccount[]
+  bookings Booking[]
 }
 
-model Booking {
-  id          Int      @id @default(autoincrement())
-  slotTime    DateTime
+model TimeSlot {
+  id Int @id @default(autoincrement())
+
+  startTime DateTime
+  endTime   DateTime
+
+  // How many people are expected to come
   peopleCount Int
+
+  // Price of the time slot in roubles (two decimal places)
+  price Decimal @db.Decimal(10, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -58,17 +68,19 @@ model Booking {
   studioId String
   studio   Studio @relation(fields: [studioId], references: [id])
 
-  orderId Int
-  order   Order @relation(fields: [orderId], references: [id])
+  bookingId Int
+  booking   Booking @relation(fields: [bookingId], references: [id])
 }
 
 model Studio {
   id String @id
 
-  bookings Booking[]
+  timeSlots TimeSlot[]
+
+  hourlyRate Decimal @db.Decimal(10, 2)
 }
 
-model Order {
+model Booking {
   id Int @id @default(autoincrement())
 
   updatedAt DateTime @updatedAt
@@ -77,19 +89,19 @@ model Order {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
-  bookings Booking[]
+  timeSlots TimeSlot[]
 }
 
-model VerificationToken {
-  id      String   @id @default(cuid())
-  email   String   @unique
-  token   String   @unique
-  expires DateTime
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @unique
+  expiresAt DateTime
 }
 
 model PasswordResetToken {
-  id      String   @id @default(cuid())
-  email   String   @unique
-  token   String   @unique
-  expires DateTime
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @unique
+  expiresAt DateTime
 }
