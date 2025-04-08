@@ -30,21 +30,22 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const config = new DocumentBuilder()
-    .setTitle('Purple Music')
-    .setDescription('Purple Music API')
-    .setVersion('1.0')
-    .addTag('purple')
-    .addBearerAuth()
-    .build();
-
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-
-  // Write the OpenAPI specification to a file
-  const outputPath = join(__dirname, '..', 'swagger.json');
-  writeFileSync(outputPath, JSON.stringify(documentFactory(), null, 2));
-
-  SwaggerModule.setup('api', app, documentFactory);
+  // TODO: make separate npm run script for generating docs
+  // const config = new DocumentBuilder()
+  //   .setTitle('Purple Music')
+  //   .setDescription('Purple Music API')
+  //   .setVersion('1.0')
+  //   .addTag('purple')
+  //   .addBearerAuth()
+  //   .build();
+  //
+  // const documentFactory = () => SwaggerModule.createDocument(app, config);
+  //
+  // // Write the OpenAPI specification to a file
+  // const outputPath = join(__dirname, '..', 'swagger.json');
+  // writeFileSync(outputPath, JSON.stringify(documentFactory(), null, 2));
+  //
+  // SwaggerModule.setup('api', app, documentFactory);
 
   app.use(cookieParser());
 

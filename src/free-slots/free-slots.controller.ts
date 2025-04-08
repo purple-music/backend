@@ -11,6 +11,7 @@ import { FreeSlotsService } from './free-slots.service';
 export class FreeSlotsController {
   constructor(private readonly freeSlotsService: FreeSlotsService) {}
 
+  // TODO: should add working hours to each studio in DB and filter in the service method
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiResponse({
@@ -21,7 +22,7 @@ export class FreeSlotsController {
   @ApiValidationResponse()
   @ApiJwtUnauthorizedResponse()
   async getFreeSlots(
-    @Query() filter: FreeSlotsFilterDto,
+    @Query('filter') filter: FreeSlotsFilterDto,
   ): Promise<FreeSlotsResponseDto> {
     return this.freeSlotsService.getFreeSlots(filter);
   }
