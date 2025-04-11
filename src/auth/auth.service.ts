@@ -76,7 +76,7 @@ export class AuthService {
     });
   }
 
-  generateJwt(user: { id: string; email: string }) {
+  generateJwt(user: { id: string; email?: string }) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,

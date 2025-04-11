@@ -223,4 +223,55 @@ export class AuthController {
 
     return res.redirect(redirectUrl);
   }
+
+  @Get('telegram')
+  @UseGuards(AuthGuard('telegram'))
+  @ApiOperation({ summary: 'Initiate Telegram authentication' })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to Telegram authentication',
+  })
+  telegramAuth() {
+    // Empty as Passport handles the redirect
+  }
+
+  @Get('callback/telegram')
+  @UseGuards(AuthGuard('telegram'))
+  @ApiExcludeEndpoint()
+  telegramAuthCallback(@Req() req: Request, @Res() res: Response) {
+    if (!req.user) {
+      throw new UnauthorizedException('Invalid Telegram credentials');
+    }
+
+    // Generate JWT (implement this in your auth service)
+    const { accessToken } = this.authService.generateJwt({
+      id: req.user.id,
+    });
+
+    // Set secure HTTP-only cookie
+    res.cookie('token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+
+    // Redirect to frontend success URL
+    const redirectUrl = process.env.CLIENT_AUTH_SUCCESS_URL;
+    if (!redirectUrl) {
+      throw new Error('CLIENT_AUTH_SUCCESS_URL not configured');
+    }
+
+    return res.redirect(redirectUrl);
+
+    // TODO: add error handling
+    // try {
+    //   // ... existing code ...
+    // } catch (error) {
+    //   const errorUrl = new URL(process.env.CLIENT_AUTH_ERROR_URL);
+    //   errorUrl.searchParams.set('error', error.message);
+    //   return res.redirect(errorUrl.toString());
+    // }
+  }
 }
