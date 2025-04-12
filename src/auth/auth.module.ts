@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma.service';
 import { EmailService } from './email.service';
 import { AuthController } from './auth.controller';
 import { YandexStrategy } from './yandex.strategy';
+import { TelegramStrategy } from './telegram.strategy';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { YandexStrategy } from './yandex.strategy';
     EmailStrategy,
     JwtStrategy,
     YandexStrategy,
+    TelegramStrategy,
   ],
   exports: [AuthService],
   controllers: [AuthController],
