@@ -2,7 +2,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Strategy } from 'passport-custom';
 import { Request } from 'express';
-import { AuthDataValidator, urlStrToAuthDataMap } from '@telegram-auth/server';
+import { AuthDataValidator } from '@telegram-auth/server';
 
 @Injectable()
 export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
@@ -16,9 +16,14 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
   }
 
   async validate(req: Request) {
-    const data = urlStrToAuthDataMap(req.url);
     try {
-      const user = await this.validator.validate(data);
+      // Create URLSearchParams from the query string (everything after ?)
+      const searchParams = new URLSearchParams(req.url.split('?')[1] || '');
+
+      // Convert to the required Map format
+      const dataMap = new Map(searchParams.entries());
+
+      const user = await this.validator.validate(dataMap);
       return {
         id: user.id.toString(),
         firstName: user.first_name,
