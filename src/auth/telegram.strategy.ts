@@ -33,7 +33,9 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
       });
     } catch (err) {
       if (err instanceof Error) {
-        throw new UnauthorizedException(err, 'Invalid Telegram authentication');
+        throw new UnauthorizedException(
+          'Invalid Telegram authentication: ' + err.message,
+        );
       }
       throw err;
     }
