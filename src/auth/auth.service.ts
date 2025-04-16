@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -45,8 +45,11 @@ export class AuthService {
 
   async validateYandexUser(profile: YandexProfile) {
     return this.prisma.$transaction(async (tx) => {
-      // Find the user with their associated email-based account
-      const account = await tx.authAccount.findUnique({
+      const email = profile.emails?.[0]?.value;
+      // const yandexAccountId = `yandex:${profile.id}`;
+
+      // 1. Check if Yandex account exists
+      const existingAccount = await tx.authAccount.findUnique({
         where: {
           provider_providerAccountId: {
             provider: 'yandex',
@@ -56,21 +59,30 @@ export class AuthService {
         include: { user: true },
       });
 
-      if (account?.user) return account.user;
+      if (existingAccount) return existingAccount.user;
 
-      // If the user doesn't exist, create a new one
+      // 2. If email exists, DON'T auto-merge - throw error
+      if (email) {
+        const existingUser = await tx.user.findUnique({ where: { email } });
+        if (existingUser) {
+          throw new ConflictException(
+            'Email already registered. Please sign in via email first to link accounts.',
+          );
+        }
+      }
+
+      // 3. Create new account
       return tx.user.create({
         data: {
           name: profile.displayName || `user-${profile.id.slice(0, 5)}`,
-          email: profile.emails?.[0]?.value,
+          email: email,
+          image: profile.photos?.[0]?.value,
           accounts: {
             create: {
               provider: 'yandex',
               providerAccountId: profile.id,
-              // NOTE: accessToken и refreshToken only if needed
             },
           },
-          image: profile.photos?.[0]?.value,
         },
       });
     });
@@ -181,5 +193,46 @@ export class AuthService {
     await this.prisma.passwordResetToken.delete({ where: { token } });
 
     return { message: 'Password reset successfully' };
+  }
+
+  // Add to your AuthService
+  async validateTelegramUser(profile: {
+    id: string;
+    firstName: string;
+    lastName?: string;
+    username?: string;
+    photoUrl?: string;
+  }): Promise<User> {
+    return this.prisma.$transaction(async (tx) => {
+      // Check if Telegram account already exists
+      const existingAccount = await tx.authAccount.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: 'telegram',
+            providerAccountId: profile.id,
+          },
+        },
+        include: { user: true },
+      });
+
+      if (existingAccount) return existingAccount.user;
+
+      // Create new user with Telegram account
+      return tx.user.create({
+        data: {
+          name: [profile.firstName, profile.lastName]
+            .filter(Boolean)
+            .join(' ')
+            .trim(),
+          image: profile.photoUrl,
+          accounts: {
+            create: {
+              provider: 'telegram',
+              providerAccountId: profile.id,
+            },
+          },
+        },
+      });
+    });
   }
 }

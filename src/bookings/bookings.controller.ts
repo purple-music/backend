@@ -34,10 +34,10 @@ export class BookingsController {
   @ApiValidationResponse()
   @ApiJwtUnauthorizedResponse()
   async makeBooking(@Body() data: MakeBookingDto, @Req() req: Request) {
-    if (!req.user || !req.user.email) {
+    if (!req.user || !req.user.id) {
       throw new UnauthorizedException('Invalid Credentials');
     }
-    const user = await this.usersService.findByEmail(req.user.email);
+    const user = await this.usersService.findById(req.user.id);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }

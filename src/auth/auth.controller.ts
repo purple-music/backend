@@ -57,7 +57,7 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   login(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('No email found');
     }
 
     const accessToken = this.authService.generateJwt({
@@ -124,10 +124,10 @@ export class AuthController {
     type: UnauthorizedResponseDto,
   })
   async profile(@Req() req: Request) {
-    if (!req.user || !req.user.email) {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!req.user || !req.user.id) {
+      throw new UnauthorizedException('Invalid Credentials');
     }
-    const user = await this.userService.findByEmail(req.user.email);
+    const user = await this.userService.findById(req.user.id);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -197,7 +197,7 @@ export class AuthController {
   @ApiExcludeEndpoint() // Hide from Swagger as this is a callback URL
   yandexAuthCallback(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('No email found');
     }
     const { accessToken } = this.authService.generateJwt({
       id: req.user.id,
