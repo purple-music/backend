@@ -40,6 +40,10 @@ import { NewPasswordRequestDto } from './dtos/new-password-request.dto';
 import { NewPasswordResponseDto } from './dtos/new-password-response.dto';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  LoginTelegramRequestDto,
+  LoginTelegramResponseDto,
+} from './dtos/login-telegram.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -222,6 +226,45 @@ export class AuthController {
     }
 
     return res.redirect(redirectUrl);
+  }
+
+  @Post('login-telegram')
+  @UseGuards(AuthGuard('telegram'))
+  @ApiBody({ type: LoginTelegramRequestDto })
+  @ApiJwtUnauthorizedResponse()
+  @ApiOperation({ summary: 'Login with Telegram' })
+  @ApiOkResponse({ type: LoginTelegramResponseDto })
+  async loginTelegram(@Req() req: Request, @Res() res: Response) {
+    if (!req.user || !req.user.id) {
+      throw new UnauthorizedException('Could not find Telegram user');
+    }
+
+    const user = await this.userService.findById(req.user.id);
+    if (!user) {
+      throw new UnauthorizedException('Could not find Telegram user');
+    }
+
+    try {
+      const { accessToken } = this.authService.generateJwt({
+        id: user.id.toString(),
+      });
+
+      res.cookie('token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+
+      return res.status(200).json({ message: 'Login successful' });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new UnauthorizedException(
+          'Mini App authentication failed: ' + error.message,
+        );
+      }
+    }
   }
 
   @Get('telegram')
