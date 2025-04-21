@@ -1,14 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsISO8601, IsOptional } from 'class-validator';
+import { IsArray, IsDate, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class FreeSlotsFilterDto {
-  @ApiProperty({ description: 'Start time for the time slot range' })
-  @IsISO8601({ strict: false })
-  from: string;
+  @ApiProperty({
+    description: 'Start time for the time slot range',
+    type: String,
+    example: '2025-04-20T21:00:00.000Z',
+  })
+  @IsDate()
+  @Type(() => Date) // Required for class-transformer to parse string -> Date
+  from: Date;
 
-  @ApiProperty({ description: 'End time for the time slot range' })
-  @IsISO8601({ strict: false })
-  to: string;
+  @ApiProperty({
+    description: 'End time for the time slot range',
+    type: String,
+    example: '2025-04-21T21:00:00.000Z',
+  })
+  @IsDate()
+  @Type(() => Date) // Required for class-transformer to parse string -> Date
+  to: Date;
 
   @ApiProperty({
     description: 'Optional array of studio IDs to filter by',

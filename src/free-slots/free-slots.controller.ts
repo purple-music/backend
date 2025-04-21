@@ -22,7 +22,7 @@ export class FreeSlotsController {
   @ApiValidationResponse()
   @ApiJwtUnauthorizedResponse()
   async getFreeSlots(
-    @Query('filter') filter: FreeSlotsFilterDto,
+    @Query() filter: FreeSlotsFilterDto,
   ): Promise<FreeSlotsResponseDto> {
     return this.freeSlotsService.getFreeSlots(filter);
   }
