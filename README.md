@@ -1,49 +1,172 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Purple Music – Backend 🎚️
+**NestJS API server for the Purple Music studio booking platform**
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This is the backend for **Purple Music**, a real-world SaaS project built to automate bookings for a music studio. It handles authentication, data access, email verification, and business logic for the platform.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🛠️ Tech Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Framework**: [NestJS](https://nestjs.com/)
+- **ORM**: [Prisma](https://www.prisma.io/) + PostgreSQL
+- **Auth**: [Passport.js](http://www.passportjs.org/)
+- **Email**: [Resend](https://resend.com/) for transactional email
+- **Docs**: Swagger / OpenAPI auto-generated from decorators
+- **Testing**: Jest (currently WIP)
+- **Validation**: class-validator + class-transformer
 
-## Project setup
+---
 
-```bash
-$ npm install
+## 🔐 Authentication System
+
+Fully modular auth system using Passport.js with the following strategies:
+
+- Local credentials (bcrypt hashed passwords)
+- Telegram OAuth
+- Yandex OAuth
+
+Tokens are issued using JWT and securely stored in cookies (handled by the frontend). Email verification and password resets are handled through secure token-based flows.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend as Frontend (Next.js)
+    participant Backend as Backend (Nest.js)
+    participant Resend as Resend API
+    participant Email as User's Email
+
+    rect rgb(191, 223, 255)
+    note over User,Email: Registration Flow
+    User->>Frontend: Submits registration form (email, password)
+    Frontend->>Backend: POST /register (email, password)
+    Backend->>Backend: Validate input, create user
+    Backend->>Backend: Generate verification JWT
+    Backend->>Resend: Send verification email with token
+    Resend->>Email: Deliver verification email
+    Email->>User: User checks email
+    end
+
+    rect rgb(255, 214, 153)
+    note over User,Email: Email Verification Flow
+    User->>Email: Clicks verification link
+    Email->>Frontend: Opens /verify?token=<token>
+    Frontend->>Backend: POST /verify (token)
+    Backend->>Backend: Verify JWT token
+    Backend->>Backend: Mark user as verified
+    Backend->>Frontend: 200 OK (verified)
+    Frontend->>User: Show verification status
+    end
+
+    rect rgb(200, 255, 200)
+    note over User,Backend: Login Flow
+    User->>Frontend: Enters email & password
+    Frontend->>Backend: POST /login (email, password)
+    Backend->>Backend: Check credentials
+    Backend->>Backend: Generate access JWT
+    Backend->>Frontend: Return access token
+    Frontend->>Frontend: Store token in secure storage
+    Frontend->>User: Redirect to dashboard
+    end
+
+    rect rgb(255, 200, 200)
+    note over User,Backend: Authorized Request Flow
+    User->>Frontend: Performs authorized action
+    Frontend->>Backend: Request with JWT in header
+    Backend->>Backend: Verify JWT
+    Backend->>Backend: Check user permissions
+    Backend->>Frontend: Return protected data
+    Frontend->>User: Display results
+    end
 ```
 
-## Compile and run the project
+---
+
+## 🗃️ Database
+
+- Managed with Prisma and PostgreSQL
+- Schema designed from scratch
+- Includes:
+    - Users
+    - Bookings
+    - Studios
+    - Availability
+    - Email verification tokens, password reset tokens, etc.
+
+---
+
+## 📚 API Documentation
+
+- Fully documented using **Swagger**
+- Available at `/api/docs` when the server is running
+- Auto-generated from decorators and DTOs
+
+---
+
+## 📁 Project Structure (simplified)
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+/src
+├── auth               # Passport strategies + auth service
+├── booking            # Booking-related logic
+├── time-slots         # Current taken slots
+├── free-slots         # Dynamically calculated free slots out of taken slots
+├── studio             # Studio and schedule management
+├── users              # User management
+├── common             # Exceptions, mails, etc
+├── main.ts            # Entry point
+/prisma
+├── migrations        # Prisma migrations
+├── schema.prisma      # Prisma schema
 ```
+
+---
+
+## 🚀 Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Generate Prisma client
+npm prisma generate
+
+# Run development server
+npm start:dev
+```
+
+Requires:
+- `.env` file with database URL, JWT secret, Resend API key, OAuth secrets, etc.
+
+---
+
+## 🧪 Tests
+
+Basic test setup using **Jest**. Test coverage is limited for now and a work in progress.
+
+```bash
+$ npm run test
+
+# test coverage
+$ npm run test:cov
+```
+
+---
+
+## 📋 TODOs & Improvements
+
+- [ ] Expand unit and e2e tests
+- [ ] Add rate limiting and better logging
+
+## 🤖 Integration Points
+
+- Frontend (Next.js app via REST API)
+- Telegram Mini App (auth integration)
+- Docker-based infra (home lab hosted)
+
+## 🧑‍💻 Author
+
+Built and maintained by @KhoDis. Part of a fullstack real-world project for managing a real studio’s operations.
+
 
 ## Run tests
 
@@ -53,47 +176,4 @@ $ npm run test
 
 # e2e tests
 $ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

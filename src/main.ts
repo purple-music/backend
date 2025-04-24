@@ -45,7 +45,7 @@ async function bootstrap() {
   // const outputPath = join(__dirname, '..', 'swagger.json');
   // writeFileSync(outputPath, JSON.stringify(documentFactory(), null, 2));
   //
-  // SwaggerModule.setup('api', app, documentFactory);
+  // SwaggerModule.setup('docs', app, documentFactory);
 
   app.use(cookieParser());
 
