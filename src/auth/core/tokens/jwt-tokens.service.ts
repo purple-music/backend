@@ -13,6 +13,18 @@ export class JwtTokensService {
     private configService: ConfigService,
   ) {}
 
+  verifyAccessToken(token: string): JwtPayload {
+    return this.jwtService.verify(token, {
+      secret: this.configService.get('JWT_ACCESS_SECRET'),
+    });
+  }
+
+  verifyRefreshToken(token: string): JwtPayload {
+    return this.jwtService.verify(token, {
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+    });
+  }
+
   // Token generation
   generateJwt(user: { id: string; email?: string }) {
     const payload: JwtPayload = {
@@ -28,14 +40,14 @@ export class JwtTokensService {
           'JWT_ACCESS_TOKEN_EXPIRATION',
           '15m',
         ),
-        secret: process.env.JWT_ACCESS_SECRET,
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
       }),
       refreshToken: this.jwtService.sign(payload, {
         expiresIn: this.configService.get<string>(
           'JWT_REFRESH_TOKEN_EXPIRATION',
           '7d',
         ),
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       }),
     };
   }
