@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../../prisma.service';
 import { v4 as uuid } from 'uuid';
-import { tokenConstants } from './constants';
+import { tokenConstants } from '../constants';
 import { add } from 'date-fns';
-import { ValidationException } from '../common/validation-exception';
+import { ValidationException } from '../../common/validation-exception';
 
 @Injectable()
-export class TokenService {
+export class EmailTokenService {
   constructor(private readonly prisma: PrismaService) {}
 
   public generateEmailVerificationToken(email: string) {

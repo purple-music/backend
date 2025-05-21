@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Resend } from 'resend';
-import { emailConstants } from './constants';
+import { emailConstants } from '../constants';
 
 @Injectable()
-export class EmailService {
+export class EmailSenderService {
   private resend: Resend;
 
   constructor() {

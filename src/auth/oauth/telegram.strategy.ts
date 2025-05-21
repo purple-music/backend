@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Strategy } from 'passport-custom';
 import { Request } from 'express';
 import { AuthDataValidator } from '@telegram-auth/server';
-import { AuthService } from './auth.service';
+import { TelegramAuthService } from './telegram-auth.service';
 import { ConfigService } from '@nestjs/config';
 import { LoginTelegramRequestDto } from './dtos/login-telegram.dto';
 
@@ -12,7 +12,7 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
   private validator: AuthDataValidator;
 
   constructor(
-    private authService: AuthService,
+    private telegramAuthService: TelegramAuthService,
     configService: ConfigService,
   ) {
     super();
@@ -31,7 +31,7 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
     try {
       const telegramUser = await this.extractTelegramUser(body.initData);
 
-      return await this.authService.validateTelegramUser({
+      return await this.telegramAuthService.validateTelegramUser({
         id: telegramUser.id.toString(),
         firstName: telegramUser.first_name,
         lastName: telegramUser.last_name,
@@ -49,7 +49,6 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
   }
 
   private async extractTelegramUser(initData: string) {
-    console.log('TelegramStrategy.extractTelegramUser', initData);
     const searchParams = new URLSearchParams(initData || '');
     const dataMap = new Map(searchParams.entries());
     return await this.validator.validate(dataMap);

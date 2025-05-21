@@ -1,13 +1,13 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy } from 'passport-yandex';
 import { Injectable } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
+import { YandexAuthService } from './yandex-auth.service';
 
 @Injectable()
 export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   constructor(
-    private authService: AuthService,
+    private yandexAuthService: YandexAuthService,
     private configService: ConfigService,
   ) {
     super({
@@ -18,6 +18,6 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
   }
 
   async validate(accessToken: string, refreshToken: string, profile: Profile) {
-    return await this.authService.validateYandexUser(profile);
+    return await this.yandexAuthService.validateYandexUser(profile);
   }
 }

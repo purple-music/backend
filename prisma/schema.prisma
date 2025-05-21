@@ -46,8 +46,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts AuthAccount[]
-  bookings Booking[]
+  accounts     AuthAccount[]
+  bookings     Booking[]
+  refreshToken RefreshToken[]
 }
 
 model TimeSlot {
@@ -104,4 +105,14 @@ model PasswordResetToken {
   email     String   @unique
   token     String   @unique
   expiresAt DateTime
+}
+
+model RefreshToken {
+  id              String    @id @default(cuid())
+  userId          String
+  token           String    @unique
+  revokedAt       DateTime?
+  replacedByToken String?
+
+  user User @relation(fields: [userId], references: [id])
 }
