@@ -13,11 +13,11 @@ import { AccessTokenGuard } from '../core/tokens/access-token.guard';
 import { RefreshTokenGuard } from '../core/tokens/refresh-token.guard';
 import { UsersService } from '../../users/users.service';
 import {
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { UnauthorizedResponseDto } from '../../common/dtos/unauthorized-response.dto';
 import { JwtTokensService } from '../core/tokens/jwt-tokens.service';
@@ -51,11 +51,7 @@ export class SessionController {
     description: 'User profile',
     type: ProfileResponseDto,
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    type: UnauthorizedResponseDto,
-  })
+  @ApiUnauthorizedResponse({ type: UnauthorizedResponseDto })
   async profile(@Req() req: Request) {
     if (!req.user || !req.user.id) {
       throw new UnauthorizedException('Invalid Credentials');
@@ -77,7 +73,8 @@ export class SessionController {
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token' })
-  @ApiCreatedResponse({ type: RefreshResponseDto })
+  @ApiOkResponse({ type: RefreshResponseDto })
+  @ApiUnauthorizedResponse({ type: UnauthorizedResponseDto })
   async refresh(@Req() req: Request, @Res() res: Response) {
     const refreshToken = req.cookies['refresh_token'] as string;
     if (!refreshToken) {

@@ -25,8 +25,8 @@ export class AccessTokenStrategy extends PassportStrategy(
 
   validate(req: Request, payload: { sub: string; email: string | undefined }) {
     return {
-      ...payload,
-      refreshToken: req.cookies?.refresh_token as string | undefined,
+      id: payload.sub,
+      email: payload.email,
     };
   }
 }
