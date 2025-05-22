@@ -9,7 +9,7 @@ import {
 import { Request } from 'express';
 import { BookingsService } from './bookings.service';
 import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../common/jwt-auth.guard';
+import { AccessTokenGuard } from '../auth/core/tokens/access-token.guard';
 import { MakeBookingDto, BookingDto } from './dtos/make-booking.dto';
 import { UsersService } from '../users/users.service';
 import { ApiJwtUnauthorizedResponse } from '../common/api-jwt-unauthorized-response.decorator';
@@ -24,7 +24,7 @@ export class BookingsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @ApiBody({ type: MakeBookingDto })
   @ApiResponse({
     status: 201,

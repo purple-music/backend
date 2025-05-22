@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../../users/users.service';
 import { PrismaService } from '../../prisma.service';
 import { Prisma, User } from '@prisma/client';
@@ -39,7 +39,6 @@ export class EmailAuthService {
 
   async register(email: string, password: string, name: string) {
     const salt = +this.configService.get<number>('BCRYPT_SALT_ROUNDS', 10);
-    console.log('salt', salt, 'type', typeof salt);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     try {

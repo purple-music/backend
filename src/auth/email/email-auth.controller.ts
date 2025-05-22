@@ -36,7 +36,7 @@ import { JwtTokensService } from '../core/tokens/jwt-tokens.service';
 export class EmailAuthController {
   constructor(
     private emailAuthService: EmailAuthService,
-    private tokenService: JwtTokensService,
+    private jwtTokensService: JwtTokensService,
   ) {}
 
   @UseGuards(EmailAuthGuard)
@@ -50,12 +50,12 @@ export class EmailAuthController {
       throw new UnauthorizedException('No email found');
     }
 
-    const { accessToken, refreshToken } = this.tokenService.generateJwt({
+    const { accessToken, refreshToken } = this.jwtTokensService.generateJwt({
       email: req.user.email,
       id: req.user.id,
     });
 
-    this.tokenService.addTokensToCookies(res, accessToken, refreshToken);
+    this.jwtTokensService.addTokensToCookies(res, accessToken, refreshToken);
 
     return res.status(200).json({
       message: 'Login successful',

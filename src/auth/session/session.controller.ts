@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { SessionService } from './session.service';
-import { JwtAuthGuard } from '../../common/jwt-auth.guard';
-import { JwtRefreshAuthGuard } from '../../common/jwt-refresh-auth.guard';
+import { AccessTokenGuard } from '../core/tokens/access-token.guard';
+import { RefreshTokenGuard } from '../core/tokens/refresh-token.guard';
 import { UsersService } from '../../users/users.service';
 import {
   ApiCreatedResponse,
@@ -34,7 +34,7 @@ export class SessionController {
     private userService: UsersService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @Post('logout')
   @ApiOkResponse({ type: LogoutResponseDto })
   logout(@Req() req: Request, @Res() res: Response) {
@@ -43,7 +43,7 @@ export class SessionController {
     return res.status(200).json({ message: 'Logout successful' });
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({
@@ -74,7 +74,7 @@ export class SessionController {
     };
   }
 
-  @UseGuards(JwtRefreshAuthGuard)
+  @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiCreatedResponse({ type: RefreshResponseDto })

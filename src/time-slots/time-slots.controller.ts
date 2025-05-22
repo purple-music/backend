@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TimeSlotsService } from './time-slots.service';
-import { JwtAuthGuard } from '../common/jwt-auth.guard';
+import { AccessTokenGuard } from '../auth/core/tokens/access-token.guard';
 import {
   TimeSlotDto,
   TimeSlotFilterDto,
@@ -15,7 +15,7 @@ import { ApiValidationResponse } from '../common/api-validation-response.decorat
 export class TimeSlotsController {
   constructor(private timeSlotsService: TimeSlotsService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @Get()
   @ApiOperation({ summary: 'Get all time slots' })
   @ApiOkResponse({
@@ -30,7 +30,7 @@ export class TimeSlotsController {
     return await this.timeSlotsService.getTimeSlots(filter);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @Get('user/:userId')
   @ApiOperation({ summary: 'Get time slots by user ID' })
   @ApiOkResponse({

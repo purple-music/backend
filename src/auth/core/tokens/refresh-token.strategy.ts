@@ -6,7 +6,10 @@ import { ConfigService } from '@nestjs/config';
 import { JwtTokensService } from './jwt-tokens.service';
 
 @Injectable()
-export class RefreshTokenStrategy extends PassportStrategy(Strategy) {
+export class RefreshTokenStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(
     private configService: ConfigService,
     private jwtTokenService: JwtTokensService,

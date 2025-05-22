@@ -5,6 +5,8 @@ import { AccessTokenStrategy } from './access-token.strategy';
 import { RefreshTokenStrategy } from './refresh-token.strategy';
 import { JwtTokensService } from './jwt-tokens.service';
 import { PrismaService } from '../../../prisma.service';
+import { AccessTokenGuard } from './access-token.guard';
+import { RefreshTokenGuard } from './refresh-token.guard';
 
 @Module({
   imports: [
@@ -18,11 +20,14 @@ import { PrismaService } from '../../../prisma.service';
     }),
   ],
   providers: [
-    AccessTokenStrategy,
-    RefreshTokenStrategy,
     JwtTokensService,
     PrismaService,
+
+    AccessTokenStrategy,
+    AccessTokenGuard,
+    RefreshTokenStrategy,
+    RefreshTokenGuard,
   ],
-  exports: [JwtTokensService],
+  exports: [JwtTokensService, AccessTokenGuard, RefreshTokenGuard],
 })
 export class JwtTokensModule {}

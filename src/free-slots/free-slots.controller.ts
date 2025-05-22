@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../common/jwt-auth.guard';
+import { AccessTokenGuard } from '../auth/core/tokens/access-token.guard';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FreeSlotsFilterDto, FreeSlotsResponseDto } from './dtos/free-slots';
 import { ApiValidationResponse } from '../common/api-validation-response.decorator';
@@ -13,7 +13,7 @@ export class FreeSlotsController {
 
   // TODO: should add working hours to each studio in DB and filter in the service method
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AccessTokenGuard)
   @ApiResponse({
     status: 200,
     description: 'Successfully fetched free slots',
