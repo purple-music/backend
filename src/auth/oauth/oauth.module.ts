@@ -7,10 +7,10 @@ import { YandexStrategy } from './yandex.strategy';
 import { TelegramStrategy } from './telegram.strategy';
 import { TelegramAuthService } from './telegram-auth.service';
 import { YandexAuthService } from './yandex-auth.service';
-import { PrismaService } from '../../prisma.service';
+import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
-  imports: [JwtTokensModule, UsersModule],
+  imports: [JwtTokensModule, UsersModule, PrismaModule],
   exports: [],
   controllers: [TelegramAuthController, YandexAuthController],
   providers: [
@@ -18,7 +18,6 @@ import { PrismaService } from '../../prisma.service';
     YandexStrategy,
     TelegramAuthService,
     YandexAuthService,
-    PrismaService,
   ],
 })
 export class OAuthModule {}

@@ -4,7 +4,7 @@ import {
   TimeSlotFilterDto,
   TimeSlotsDto,
 } from './dtos/time-slots.dto';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ValidationException } from '../common/validation-exception';
 
 @Injectable()

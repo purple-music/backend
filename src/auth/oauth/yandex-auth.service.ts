@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { Profile as YandexProfile } from 'passport-yandex';
 import { User } from '@prisma/client';
 

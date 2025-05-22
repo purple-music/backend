@@ -5,7 +5,7 @@ import {
   MakeBookingDto,
   MakeTimeSlotDto,
 } from './dtos/make-booking.dto';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ValidationException } from '../common/validation-exception';
 import { PricesService } from '../common/prices.service';
 

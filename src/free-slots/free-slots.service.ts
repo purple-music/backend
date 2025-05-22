@@ -5,7 +5,7 @@ import {
   FreeSlotsResponseDto,
 } from './dtos/free-slots';
 import { ValidationException } from '../common/validation-exception';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { Studio } from '@prisma/client';
 import { PricesService } from '../common/prices.service';
 

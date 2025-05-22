@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { BookingsService } from './bookings.service';
 import { ValidationException } from '../common/validation-exception';
 import { Prisma, Studio, TimeSlot } from '@prisma/client';

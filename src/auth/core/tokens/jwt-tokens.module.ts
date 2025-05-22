@@ -4,12 +4,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AccessTokenStrategy } from './access-token.strategy';
 import { RefreshTokenStrategy } from './refresh-token.strategy';
 import { JwtTokensService } from './jwt-tokens.service';
-import { PrismaService } from '../../../prisma.service';
 import { AccessTokenGuard } from './access-token.guard';
 import { RefreshTokenGuard } from './refresh-token.guard';
+import { PrismaModule } from '../../../prisma/prisma.module';
 
 @Module({
   imports: [
+    PrismaModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -21,7 +22,6 @@ import { RefreshTokenGuard } from './refresh-token.guard';
   ],
   providers: [
     JwtTokensService,
-    PrismaService,
 
     AccessTokenStrategy,
     AccessTokenGuard,

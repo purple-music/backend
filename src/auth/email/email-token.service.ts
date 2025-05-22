@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { v4 as uuid } from 'uuid';
 import { tokenConstants } from '../constants';
 import { add } from 'date-fns';
