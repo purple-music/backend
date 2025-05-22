@@ -19,15 +19,15 @@ export class SessionService {
 
     // 3. Generate NEW tokens
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-      await this.jwtTokensService.generateJwt({ id: userId });
+      this.jwtTokensService.generateTokenPair({ id: userId });
 
     // 4. Rotate tokens in DB
-    await this.jwtTokensService.rotateRefreshToken(
+    await this.jwtTokensService.rotateTokens(
       userId,
       oldRefreshToken, // Invalidate this
       newRefreshToken, // Store this
     );
 
-    return { newAccessToken, newRefreshToken };
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 }

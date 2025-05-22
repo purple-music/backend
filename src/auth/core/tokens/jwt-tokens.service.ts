@@ -25,8 +25,11 @@ export class JwtTokensService {
     });
   }
 
-  // Token generation
-  async generateJwt(user: { id: string; email?: string }) {
+  /**
+   * Sign a new pair of access and refresh tokens
+   * Don't forget to add refresh token to DB! Otherwise, it will be considered revoked
+   */
+  generateTokenPair(user: { id: string; email?: string }) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -49,6 +52,20 @@ export class JwtTokensService {
       ),
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
     });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  /**
+   * Generates new JWT tokens AND persists the refresh token
+   * Use only for initial authentication (login)
+   */
+  async createLoginSession(user: { id: string; email?: string }) {
+    // Generate tokens
+    const { accessToken, refreshToken } = this.generateTokenPair(user);
 
     // Add refreshToken to the database
     await this.prisma.refreshToken.create({
@@ -92,24 +109,49 @@ export class JwtTokensService {
     }
     const record = await this.prisma.refreshToken.findUnique({
       where: { token },
+      include: { user: true },
     });
 
-    if (!record || record.revokedAt) {
+    if (!record) {
+      throw new UnauthorizedException('No such refresh token');
+    }
+    if (record.revokedAt) {
       throw new UnauthorizedException('Refresh token was revoked');
     }
+
+    return {
+      id: record.user.id,
+      email: record.user.email,
+    };
   }
 
-  async rotateRefreshToken(
+  async rotateTokens(
     userId: string,
     oldRefreshToken: string,
     newRefreshToken: string,
   ) {
-    const record = await this.prisma.refreshToken.create({
-      data: { token: newRefreshToken, userId },
-    });
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, token: { not: newRefreshToken } },
-      data: { revokedAt: new Date(), replacedByToken: record.token },
-    });
+    // 1. First revoke old tokens (atomic operation)
+    await this.prisma.$transaction([
+      // Mark old tokens as revoked
+      this.prisma.refreshToken.updateMany({
+        where: {
+          userId,
+          token: oldRefreshToken, // Specific token being rotated
+          revokedAt: null, // Only unrevoked tokens
+        },
+        data: {
+          revokedAt: new Date(),
+          replacedByToken: newRefreshToken,
+        },
+      }),
+
+      // Create new token
+      this.prisma.refreshToken.create({
+        data: {
+          token: newRefreshToken,
+          userId,
+        },
+      }),
+    ]);
   }
 }

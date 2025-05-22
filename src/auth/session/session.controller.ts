@@ -76,14 +76,17 @@ export class SessionController {
   @ApiOkResponse({ type: RefreshResponseDto })
   @ApiUnauthorizedResponse({ type: UnauthorizedResponseDto })
   async refresh(@Req() req: Request, @Res() res: Response) {
-    const refreshToken = req.cookies['refresh_token'] as string;
-    if (!refreshToken) {
+    const oldRefreshToken = req.cookies['refresh_token'] as string;
+    if (!oldRefreshToken) {
       throw new UnauthorizedException('Refresh token missing');
     }
 
-    const { newAccessToken, newRefreshToken } =
-      await this.sessionService.refreshTokens(refreshToken);
-    this.tokenService.addTokensToCookies(res, newAccessToken, newRefreshToken);
+    const newTokens = await this.sessionService.refreshTokens(oldRefreshToken);
+    this.tokenService.addTokensToCookies(
+      res,
+      newTokens.accessToken,
+      newTokens.refreshToken,
+    );
 
     return res.json({
       message: 'Tokens refreshed successfully',

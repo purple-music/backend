@@ -51,7 +51,7 @@ export class EmailAuthController {
     }
 
     const { accessToken, refreshToken } =
-      await this.jwtTokensService.generateJwt({
+      await this.jwtTokensService.createLoginSession({
         email: req.user.email,
         id: req.user.id,
       });

@@ -44,7 +44,7 @@ export class YandexAuthController {
     }
 
     const { accessToken, refreshToken } =
-      await this.jwtTokenService.generateJwt({
+      await this.jwtTokenService.createLoginSession({
         id: req.user.id,
         email: req.user.email,
       });

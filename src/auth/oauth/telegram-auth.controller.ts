@@ -52,14 +52,12 @@ export class TelegramAuthController {
     }
 
     try {
-      const tokens = await this.jwtTokenService.generateJwt({
-        id: user.id.toString(),
-      });
+      const { accessToken, refreshToken } =
+        await this.jwtTokenService.createLoginSession({
+          id: user.id.toString(),
+        });
 
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      };
+      return { accessToken, refreshToken };
     } catch (error) {
       if (error instanceof Error) {
         throw new UnauthorizedException(
@@ -90,7 +88,7 @@ export class TelegramAuthController {
 
     // Generate JWT (implement this in your auth service)
     const { accessToken, refreshToken } =
-      await this.jwtTokenService.generateJwt({
+      await this.jwtTokenService.createLoginSession({
         id: req.user.id,
       });
 
