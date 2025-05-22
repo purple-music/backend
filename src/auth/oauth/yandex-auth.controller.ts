@@ -38,15 +38,16 @@ export class YandexAuthController {
   @Get('callback/yandex')
   @UseGuards(AuthGuard('yandex'))
   @ApiExcludeEndpoint()
-  yandexAuthCallback(@Req() req: Request, @Res() res: Response) {
+  async yandexAuthCallback(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
       throw new UnauthorizedException('No email found');
     }
 
-    const { accessToken, refreshToken } = this.jwtTokenService.generateJwt({
-      id: req.user.id,
-      email: req.user.email,
-    });
+    const { accessToken, refreshToken } =
+      await this.jwtTokenService.generateJwt({
+        id: req.user.id,
+        email: req.user.email,
+      });
 
     const successUrl = this.config.get<string>('CLIENT_AUTH_SUCCESS_URL');
     if (!successUrl) {

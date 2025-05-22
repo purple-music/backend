@@ -26,7 +26,7 @@ export class JwtTokensService {
   }
 
   // Token generation
-  generateJwt(user: { id: string; email?: string }) {
+  async generateJwt(user: { id: string; email?: string }) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -34,21 +34,30 @@ export class JwtTokensService {
       aud: this.configService.get<string>('JWT_AUDIENCE'),
     };
 
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get<string>(
+        'JWT_ACCESS_TOKEN_EXPIRATION',
+        '15m',
+      ),
+      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get<string>(
+        'JWT_REFRESH_TOKEN_EXPIRATION',
+        '7d',
+      ),
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+    });
+
+    // Add refreshToken to the database
+    await this.prisma.refreshToken.create({
+      data: { token: refreshToken, userId: user.id },
+    });
+
     return {
-      accessToken: this.jwtService.sign(payload, {
-        expiresIn: this.configService.get<string>(
-          'JWT_ACCESS_TOKEN_EXPIRATION',
-          '15m',
-        ),
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      }),
-      refreshToken: this.jwtService.sign(payload, {
-        expiresIn: this.configService.get<string>(
-          'JWT_REFRESH_TOKEN_EXPIRATION',
-          '7d',
-        ),
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      }),
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -67,7 +76,7 @@ export class JwtTokensService {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/api/auth/refresh', // Only sent to refresh endpoint
+      path: '/', // We had to change this to '/' because we need to track refresh tokens in middleware
     });
   }
 

@@ -52,7 +52,7 @@ export class TelegramAuthController {
     }
 
     try {
-      const tokens = this.jwtTokenService.generateJwt({
+      const tokens = await this.jwtTokenService.generateJwt({
         id: user.id.toString(),
       });
 
@@ -83,15 +83,16 @@ export class TelegramAuthController {
   @Get('callback/telegram')
   @UseGuards(AuthGuard('telegram'))
   @ApiExcludeEndpoint()
-  telegramAuthCallback(@Req() req: Request, @Res() res: Response) {
+  async telegramAuthCallback(@Req() req: Request, @Res() res: Response) {
     if (!req.user) {
       throw new UnauthorizedException('Invalid Telegram credentials');
     }
 
     // Generate JWT (implement this in your auth service)
-    const { accessToken, refreshToken } = this.jwtTokenService.generateJwt({
-      id: req.user.id,
-    });
+    const { accessToken, refreshToken } =
+      await this.jwtTokenService.generateJwt({
+        id: req.user.id,
+      });
 
     const successUrl = this.config.getOrThrow<string>(
       'CLIENT_AUTH_SUCCESS_URL',

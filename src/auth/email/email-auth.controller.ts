@@ -45,15 +45,16 @@ export class EmailAuthController {
   @ApiValidationResponse()
   @ApiJwtUnauthorizedResponse()
   @ApiOkResponse({ type: LoginResponseDto })
-  login(@Req() req: Request, @Res() res: Response) {
+  async login(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.email) {
       throw new UnauthorizedException('No email found');
     }
 
-    const { accessToken, refreshToken } = this.jwtTokensService.generateJwt({
-      email: req.user.email,
-      id: req.user.id,
-    });
+    const { accessToken, refreshToken } =
+      await this.jwtTokensService.generateJwt({
+        email: req.user.email,
+        id: req.user.id,
+      });
 
     this.jwtTokensService.addTokensToCookies(res, accessToken, refreshToken);
 
