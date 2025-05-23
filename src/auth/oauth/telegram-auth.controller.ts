@@ -65,7 +65,7 @@ export class TelegramAuthController {
       console.log('Adding tokens to cookies'); // <-- Add this
       this.jwtTokenService.addTokensToCookies(res, accessToken, refreshToken);
 
-      return { message: 'Login successful' };
+      return res.status(200).json({ message: 'Login successful' });
     } catch (error) {
       console.error('Error in login:', error); // <-- Add this
       if (error instanceof Error) {
