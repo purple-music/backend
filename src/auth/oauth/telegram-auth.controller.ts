@@ -41,7 +41,7 @@ export class TelegramAuthController {
   @ApiJwtUnauthorizedResponse()
   @ApiOperation({ summary: 'Login with Telegram' })
   @ApiOkResponse({ type: LoginTelegramResponseDto })
-  async loginTelegram(@Req() req: Request) {
+  async loginTelegram(@Req() req: Request, @Res() res: Response) {
     if (!req.user || !req.user.id) {
       throw new UnauthorizedException('Could not find Telegram user');
     }
@@ -57,7 +57,9 @@ export class TelegramAuthController {
           id: user.id.toString(),
         });
 
-      return { accessToken, refreshToken };
+      this.jwtTokenService.addTokensToCookies(res, accessToken, refreshToken);
+
+      return { message: 'Login successful' };
     } catch (error) {
       if (error instanceof Error) {
         throw new UnauthorizedException(
