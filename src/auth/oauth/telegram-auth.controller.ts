@@ -42,25 +42,32 @@ export class TelegramAuthController {
   @ApiOperation({ summary: 'Login with Telegram' })
   @ApiOkResponse({ type: LoginTelegramResponseDto })
   async loginTelegram(@Req() req: Request, @Res() res: Response) {
+    console.log('Login endpoint hit'); // <-- Add this
     if (!req.user || !req.user.id) {
+      console.log('No user in request'); // <-- Add this
       throw new UnauthorizedException('Could not find Telegram user');
     }
 
+    console.log(`Looking for user ${req.user.id}`); // <-- Add this
     const user = await this.userService.findById(req.user.id);
     if (!user) {
+      console.log('User not found in DB'); // <-- Add this
       throw new UnauthorizedException('Could not find Telegram user');
     }
 
     try {
+      console.log('Creating session'); // <-- Add this
       const { accessToken, refreshToken } =
         await this.jwtTokenService.createLoginSession({
           id: user.id.toString(),
         });
 
+      console.log('Adding tokens to cookies'); // <-- Add this
       this.jwtTokenService.addTokensToCookies(res, accessToken, refreshToken);
 
       return { message: 'Login successful' };
     } catch (error) {
+      console.error('Error in login:', error); // <-- Add this
       if (error instanceof Error) {
         throw new UnauthorizedException(
           'Mini App authentication failed: ' + error.message,
