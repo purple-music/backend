@@ -42,32 +42,22 @@ export class TelegramAuthController {
   @ApiOperation({ summary: 'Login with Telegram' })
   @ApiOkResponse({ type: LoginTelegramResponseDto })
   async loginTelegram(@Req() req: Request, @Res() res: Response) {
-    console.log('Login endpoint hit'); // <-- Add this
     if (!req.user || !req.user.id) {
-      console.log('No user in request'); // <-- Add this
       throw new UnauthorizedException('Could not find Telegram user');
     }
 
-    console.log(`Looking for user ${req.user.id}`); // <-- Add this
     const user = await this.userService.findById(req.user.id);
     if (!user) {
-      console.log('User not found in DB'); // <-- Add this
       throw new UnauthorizedException('Could not find Telegram user');
     }
 
     try {
-      console.log('Creating session'); // <-- Add this
-      const { accessToken, refreshToken } =
-        await this.jwtTokenService.createLoginSession({
-          id: user.id.toString(),
-        });
-
-      console.log('Adding tokens to cookies'); // <-- Add this
-      this.jwtTokenService.addTokensToCookies(res, accessToken, refreshToken);
+      await this.jwtTokenService.createLoginSession(res, {
+        id: user.id.toString(),
+      });
 
       return res.status(200).json({ message: 'Login successful' });
     } catch (error) {
-      console.error('Error in login:', error); // <-- Add this
       if (error instanceof Error) {
         throw new UnauthorizedException(
           'Mini App authentication failed: ' + error.message,
@@ -95,25 +85,14 @@ export class TelegramAuthController {
       throw new UnauthorizedException('Invalid Telegram credentials');
     }
 
-    // Generate JWT (implement this in your auth service)
-    const { accessToken, refreshToken } =
-      await this.jwtTokenService.createLoginSession({
-        id: req.user.id,
-      });
+    await this.jwtTokenService.createLoginSession(res, {
+      id: req.user.id,
+    });
 
     const successUrl = this.config.getOrThrow<string>(
       'CLIENT_AUTH_SUCCESS_URL',
     );
 
-    // Redirect to frontend with tokens in URL hash
-    const redirectUrl = new URL(successUrl);
-
-    // Use hash to prevent server-side logging of tokens
-    redirectUrl.hash = new URLSearchParams({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    }).toString();
-
-    return res.redirect(redirectUrl.toString());
+    return res.redirect(successUrl);
   }
 }

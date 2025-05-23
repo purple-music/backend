@@ -50,13 +50,10 @@ export class EmailAuthController {
       throw new UnauthorizedException('No email found');
     }
 
-    const { accessToken, refreshToken } =
-      await this.jwtTokensService.createLoginSession({
-        email: req.user.email,
-        id: req.user.id,
-      });
-
-    this.jwtTokensService.addTokensToCookies(res, accessToken, refreshToken);
+    await this.jwtTokensService.createLoginSession(res, {
+      email: req.user.email,
+      id: req.user.id,
+    });
 
     return res.status(200).json({
       message: 'Login successful',

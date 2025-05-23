@@ -43,26 +43,16 @@ export class YandexAuthController {
       throw new UnauthorizedException('No email found');
     }
 
-    const { accessToken, refreshToken } =
-      await this.jwtTokenService.createLoginSession({
-        id: req.user.id,
-        email: req.user.email,
-      });
+    await this.jwtTokenService.createLoginSession(res, {
+      id: req.user.id,
+      email: req.user.email,
+    });
 
     const successUrl = this.config.get<string>('CLIENT_AUTH_SUCCESS_URL');
     if (!successUrl) {
       throw new Error('CLIENT_AUTH_SUCCESS_URL not configured');
     }
 
-    // Redirect to frontend with tokens in URL hash
-    const redirectUrl = new URL(successUrl);
-
-    // Use hash to prevent server-side logging of tokens
-    redirectUrl.hash = new URLSearchParams({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    }).toString();
-
-    return res.redirect(redirectUrl.toString());
+    return res.redirect(successUrl);
   }
 }

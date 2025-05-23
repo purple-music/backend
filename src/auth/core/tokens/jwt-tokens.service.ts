@@ -63,7 +63,10 @@ export class JwtTokensService {
    * Generates new JWT tokens AND persists the refresh token
    * Use only for initial authentication (login)
    */
-  async createLoginSession(user: { id: string; email?: string }) {
+  async createLoginSession(
+    res: Response,
+    user: { id: string; email?: string },
+  ) {
     // Generate tokens
     const { accessToken, refreshToken } = this.generateTokenPair(user);
 
@@ -72,7 +75,10 @@ export class JwtTokensService {
       data: { token: refreshToken, userId: user.id },
     });
 
+    this.addTokensToCookies(res, accessToken, refreshToken);
+
     return {
+      res,
       accessToken,
       refreshToken,
     };
