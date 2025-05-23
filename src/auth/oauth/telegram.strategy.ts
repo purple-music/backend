@@ -22,14 +22,18 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
   }
 
   async validate(req: Request) {
+    console.log('Telegram strategy validate called'); // <-- Add this
     const body = req.body as LoginTelegramRequestDto;
 
     if (!body?.initData) {
+      console.log('No initData found'); // <-- Add this
       throw new UnauthorizedException('No initData in request body');
     }
 
     try {
+      console.log('Extracting Telegram user'); // <-- Add this
       const telegramUser = await this.extractTelegramUser(body.initData);
+      console.log('Telegram user extracted:', telegramUser); // <-- Add this
 
       return await this.telegramAuthService.validateTelegramUser({
         id: telegramUser.id.toString(),
@@ -39,6 +43,7 @@ export class TelegramStrategy extends PassportStrategy(Strategy, 'telegram') {
         photoUrl: telegramUser.photo_url,
       });
     } catch (err) {
+      console.error('Telegram validation error:', err); // <-- Add this
       if (err instanceof Error) {
         throw new UnauthorizedException(
           'Invalid Telegram authentication: ' + err.message,
